@@ -1,8 +1,9 @@
 # 读取 JPG 图像
-import datetime
 import json
 import os.path
 import random
+import shutil
+from datetime import datetime
 
 import cv2
 
@@ -46,8 +47,9 @@ def combine_scene_image(jpg_path, png_path):
     alpha_channel = png_img[:, :, 3]
     # 将 PNG 图像合成到 JPG 图像中
     for c in range(0, 3):
-        jpg_img[:png_h, :png_w, c] = jpg_img[:png_h, :png_w, c] * (1 - alpha_channel / 255) + \
-                                     png_img[:, :, c] * (alpha_channel / 255)
+        jpg_img[offset_y:png_h + offset_y, offset_x:png_w + offset_x, c] = \
+            jpg_img[offset_y:png_h + offset_y, offset_x:png_w + offset_x, c] * \
+            (1 - alpha_channel / 255) + png_img[:, :, c] * (alpha_channel / 255)
     return jpg_img, offset_x, offset_y
 
 
@@ -57,8 +59,8 @@ def offset_json_obj(json_path, offset_x, offset_y):
     for r, row in enumerate(json_obj["matrix"]):
         for c, cell in enumerate(row):
             json_obj["matrix"][r][c] = [cell[0] + offset_x, cell[1] + offset_y]
-    for c, cell in enumerate(json_obj["dst_pnts"]):
-        json_obj["dst_pnts"][c] = [cell[0] + offset_x, cell[1] + offset_y]
+    for c, cell in enumerate(json_obj["dst_pts"]):
+        json_obj["dst_pts"][c] = [cell[0] + offset_x, cell[1] + offset_y]
     for r, row in enumerate(json_obj["regions"]):
         for c, cell in enumerate(row):
             for rg, region in enumerate(cell):
@@ -78,21 +80,21 @@ info = {
     "date_created": "2023-12-14"
 }
 licenses_list = []
-category_info_list = [
+categories_list = [
     {
         "id": 1,
         "name": "black",
-        "supercategory": "black"
+        "supercategory": "piece"
     },
     {
         "id": 2,
         "name": "white",
-        "supercategory": "white"
+        "supercategory": "piece"
     },
     {
         "id": 3,
         "name": "empty",
-        "supercategory": "empty"
+        "supercategory": "board"
     },
     {
         "id": 4,
@@ -100,21 +102,28 @@ category_info_list = [
         "supercategory": "board"
     },
     # {
-    #     "id": 5,
+    #     "id": ,
+    #     "name": "row",
+    #     "supercategory": "board"
+    # }
+    # {
+    #     "id": ,
+    #     "name": "col",
+    #     "supercategory": "board"
+    # }
+    # {
+    #     "id": ,
     #     "name": "corner",
-    #     "supercategory": "corner"
+    #     "supercategory": "board"
     # }
 ]
 image_info_id = 0
 annotation_info_id = 0
 
 
-def coco_image_info(json_obj, jpg_img, dia_path, tmpl_path):
+def coco_image_info(json_obj, jpg_img, dia_path, warp_path, scene):
     global image_info_id
     global annotation_info_id
-
-    bn, pre, ext = GetFileNameSplit(dia_path)
-
     # 获取当前日期和时间
     current_datetime = datetime.now()
     # 将日期和时间格式化为指定格式
@@ -125,9 +134,9 @@ def coco_image_info(json_obj, jpg_img, dia_path, tmpl_path):
     image_info_id += 1
     image_info = {
         "id": image_info_id,
-        "width": h,  # 替换为实际图像宽度
-        "height": w,  # 替换为实际图像高度
-        "file_name": bn,  # 替换为实际图像文件名
+        "width": w,  # 替换为实际图像宽度
+        "height": h,  # 替换为实际图像高度
+        "file_name": scene,  # 替换为实际图像文件名
         "license": None,
         "flickr_url": "",
         "coco_url": "",
@@ -143,13 +152,13 @@ def coco_image_info(json_obj, jpg_img, dia_path, tmpl_path):
         "id": annotation_info_id,
         "image_id": image_info_id,
         "category_id": 4,
-        "segmentation": seg,
+        "segmentation": [seg],
         "area": area,  # 替换为实际区域面积
         "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
         "iscrowd": 0
     }
     ann_list.append(annotation_info)
-    diagram = np.genfromtxt(tmpl_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
+    diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
 
     for r, row in enumerate(json_obj["regions"]):
         for c, cell in enumerate(row):
@@ -161,7 +170,7 @@ def coco_image_info(json_obj, jpg_img, dia_path, tmpl_path):
                 "id": annotation_info_id,
                 "image_id": image_info_id,
                 "category_id": cat_id,  # 替换为实际类别ID
-                "segmentation": seg,
+                "segmentation": [seg],
                 "area": area,  # 替换为实际区域面积
                 "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
                 "iscrowd": 0
@@ -171,8 +180,9 @@ def coco_image_info(json_obj, jpg_img, dia_path, tmpl_path):
 
 
 def cale_ppt_from_region(region):
+    rgns = np.array(region, dtype=np.int32)
     # 计算包围四个点形成的四边形的最大矩形
-    roi = cv2.boundingRect(region)
+    roi = cv2.boundingRect(rgns)
     seg = [x for point in region for x in point]
     # 定义四个点坐标
     points = np.array(region, dtype=np.int32)
@@ -183,27 +193,59 @@ def cale_ppt_from_region(region):
     return seg, area, roi
 
 
-def coco_dataset():
+def do_coco_dataset():
     output_dir = "../output/dataset"
+    # 手动下载并解压到 scene_dir
+    # https://aistudio.baidu.com/datasetdetail/93975
     scene_dir = "../output/scene_images"
-    diagram_warp_dir = "../output/diagram_warp"
+    # diagram_warp_dir = "../output/diagram_warp"
     label_path = "../output/diagram_img/label.txt"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     # 获取文件夹中的所有项
     scene_list = os.listdir(scene_dir)
     diagram_list = []
-
+    coco_data = {
+        "info": info,
+        "licenses": licenses_list,
+        "images": None,
+        "annotations": None,
+        "categories": categories_list
+    }
     with open(label_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
     for line in lines:
         dia_path, warp_path = line.rstrip().split('\t')
-        warp_path = warp_path.replace("/diagram_img/", "/diagram_warp/")
+        warp_path = warp_path.replace("/diagram_img", "/diagram_warp")
         diagram_list.append([dia_path, warp_path])
 
+    images = []
+    annotations = []
+
+    cnt = 0
     for scene in scene_list:
+        if not scene.endswith(".jpg"):
+            continue
+
+        print("scene: " + scene)
         scene_path = os.path.join(scene_dir, scene)
         dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
         jpg_img, offset_x, offset_y = combine_scene_image(scene_path, warp_path)
-
         json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_x)
+
+        img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, warp_path, scene)
+        cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
+        images.append(img_info)
+        annotations += ann_list
+        cnt += 1
+        if cnt == cnt_limit:
+            break
+    coco_data["images"] = images
+    coco_data["annotations"] = annotations
+    with open(os.path.join(output_dir, 'coco_data.json'), 'w') as json_file:
+        json.dump(coco_data, json_file, indent=2)
+
+
+cnt_limit = 99999999
+if __name__ == "__main__":
+    do_coco_dataset()

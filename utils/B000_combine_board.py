@@ -143,13 +143,13 @@ def do_combine():
         combine_board_image(o[r0], b[r1], w[r2], diagram_path=d, save_path=save_path)
         label.append(d + "\t" + save_path + "\n")
         cnt += 1
-        if cnt == 10:
+        if cnt == cnt_limit:
             break
 
     with open(os.path.join(output_dir, "label.txt"), "w", encoding="utf-8") as l:
         l.writelines(label)
 
-
+cnt_limit = 500
 if __name__ == "__main__":
     # try_to_combine()
     do_combine()
