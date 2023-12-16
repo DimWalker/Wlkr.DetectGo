@@ -11,8 +11,13 @@ import numpy as np
 
 from Wlkr.Common.FileUtils import GetFileNameSplit
 
+tmp_disable_factor = 37
+factor_cnt = 0
+
 
 def random_perspective_transform(image, factor=100):
+    global factor_cnt
+    factor_cnt += 1
     h, w = image.shape[:2]
 
     # 创建新的图片
@@ -26,8 +31,11 @@ def random_perspective_transform(image, factor=100):
         [[0 + factor, 0 + factor], [w + factor, 0 + factor],
          [w + factor, h + factor], [0 + factor, h + factor]])
 
+    tmp_fac = factor
+    if factor_cnt % tmp_disable_factor == 0:
+        tmp_fac = 0
     # 定义目标图像上的四个点，通过随机扰动原始点
-    dst_pts = src_pts + np.random.uniform(-factor, factor, size=src_pts.shape).astype(np.float32)
+    dst_pts = src_pts + np.random.uniform(-tmp_fac, tmp_fac, size=src_pts.shape).astype(np.float32)
     # dst_pts = np.float32([[0 + 100, 0 + 100], [w + 100, 0 + 100], [w + 100, h + 100], [0 + 100, h + 100]])
     # 计算透视变换矩阵
     M = cv2.getPerspectiveTransform(src_pts, dst_pts)
@@ -61,8 +69,8 @@ def refresh_matrix(json_obj, M, factor, zoom, dst_pts):
             json_obj["matrix"][r][c] = [int(f * zoom) for f in calc_warp_point(M, x, y)]
             len = int(json_obj["avg_line_len"] / 2)
             # 棋盘四个角补正
-            # if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):
-            #    len = json_obj["avg_line_len"]
+            if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):
+               len = int(json_obj["avg_line_len"] * 0.8)
             # 棋子region
             lt = [int(f * zoom) for f in calc_warp_point(M, x - len, y - len)]
             rt = [int(f * zoom) for f in calc_warp_point(M, x + len, y - len)]

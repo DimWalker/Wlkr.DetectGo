@@ -31,9 +31,9 @@ def combine_scene_image(jpg_path, png_path, train_size=640):
             (1 - alpha_channel / 255) + png_img[:, :, c] * (alpha_channel / 255)
 
     if jpg_h > jpg_w:
-        zoom = jpg_h / train_size
+        zoom = train_size / jpg_h
     else:
-        zoom = jpg_w / train_size
+        zoom = train_size / jpg_w
 
     if zoom != 1:
         offset_x = int(offset_x * zoom)
@@ -58,6 +58,25 @@ def offset_json_obj(json_path, offset_x, offset_y, zoom):
             for rg, region in enumerate(cell):
                 json_obj["regions"][r][c][rg] = [region[0] * zoom + offset_x, region[1] * zoom + offset_y]
     return json_obj
+
+
+def draw_region(image, pts):
+    if len(pts) == 1:
+        # 顶点坐标需要reshape成OpenCV所需的格式
+        points = np.array(pts[0], np.int32).reshape((4, 2))
+        # 画四边形
+        cv2.polylines(image, [points], isClosed=True,
+                      color=(
+                          random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
+                      thickness=1)
+    else:
+        # 定义矩形的左上角和右下角坐标
+        x1, y1 = pts[0], pts[1]
+        x2, y2 = pts[0] + pts[2], pts[1] + pts[3]
+        # 定义矩形的颜色（BGR 格式）
+        color = (0, 255, 0)  # 这里使用绿色
+        # 绘制矩形
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness=1)
 
 
 ################## Coco Dataset
@@ -230,7 +249,7 @@ def do_coco_dataset():
         scene_path = os.path.join(scene_dir, scene)
         dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
         jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
-        json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_x, zoom)
+        json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_y, zoom)
 
         img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, warp_path, scene)
         cv2.imwrite(os.path.join(output_dir, scene), jpg_img)

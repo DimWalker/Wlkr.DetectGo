@@ -149,7 +149,7 @@ def do_combine():
     with open(os.path.join(output_dir, "label.txt"), "w", encoding="utf-8") as l:
         l.writelines(label)
 
-cnt_limit = 500
+cnt_limit = 50000
 if __name__ == "__main__":
     # try_to_combine()
     do_combine()
