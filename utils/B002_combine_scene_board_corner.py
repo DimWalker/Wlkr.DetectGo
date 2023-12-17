@@ -127,7 +127,7 @@ def cale_ppt_from_region(region):
 
 
 dataset_name = "go_board_corner_dataset"
-dataset_type = "eval"
+dataset_type = "train"
 
 
 def do_coco_dataset():

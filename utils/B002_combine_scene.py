@@ -266,4 +266,5 @@ def do_coco_dataset():
 
 cnt_limit = 99999999
 if __name__ == "__main__":
-    do_coco_dataset()
+    #do_coco_dataset()
+    pass
