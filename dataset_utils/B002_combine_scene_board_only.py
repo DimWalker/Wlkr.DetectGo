@@ -1,4 +1,3 @@
-# 读取 JPG 图像
 import json
 import os.path
 import random
@@ -8,7 +7,7 @@ import numpy as np
 
 ################## Coco Dataset
 # 定义类别信息
-from utils.B002_combine_scene import combine_scene_image, offset_json_obj, draw_region
+from dataset_utils.B002_combine_scene import combine_scene_image, offset_json_obj
 
 info = {
     "description": "COCO Dataset",
@@ -53,7 +52,7 @@ def find_category_id(name):
     raise Exception("category_id not found.")
 
 
-def coco_image_info(json_obj, jpg_img, dia_path, scene):
+def coco_image_info(json_obj, jpg_img, scene):
     global image_info_id
     global annotation_info_id
     # 获取当前日期和时间
@@ -90,25 +89,6 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
         "iscrowd": 0
     }
     ann_list.append(annotation_info)
-    diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
-
-    for r, row in enumerate(json_obj["regions"]):
-        for c, cell in enumerate(row):
-            if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):
-                annotation_info_id += 1
-                seg, area, roi = cale_ppt_from_region(cell)
-                cat_id = find_category_id("corner")
-                # 定义注释信息
-                annotation_info = {
-                    "id": annotation_info_id,
-                    "image_id": image_info_id,
-                    "category_id": cat_id,  # 替换为实际类别ID
-                    "segmentation": [seg],
-                    "area": area,  # 替换为实际区域面积
-                    "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
-                    "iscrowd": 0
-                }
-                ann_list.append(annotation_info)
     return image_info, ann_list
 
 
@@ -126,15 +106,11 @@ def cale_ppt_from_region(region):
     return seg, area, roi
 
 
-dataset_name = "go_board_corner_dataset"
-dataset_type = "train"
-
-
 def do_coco_dataset():
-    output_dir = "../output/" + dataset_name + "/" + dataset_type
+    output_dir = "../output/dataset"
     # 手动下载并解压到 scene_dir
     # https://aistudio.baidu.com/datasetdetail/93975
-    scene_dir = "../output/scene_images_" + dataset_type
+    scene_dir = "../output/scene_images_2"
     # diagram_warp_dir = "../output/diagram_warp"
     label_path = "../output/diagram_img/label.txt"
     if not os.path.exists(output_dir):
@@ -170,7 +146,7 @@ def do_coco_dataset():
         jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
         json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_y, zoom)
 
-        img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, scene)
+        img_info, ann_list = coco_image_info(json_obj, jpg_img, scene)
         cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
         images.append(img_info)
         annotations += ann_list
@@ -183,24 +159,7 @@ def do_coco_dataset():
         json.dump(coco_data, json_file, indent=2)
 
 
-def try_to():
-    output_dir = "../output/scene_draw/" + dataset_type
-    dataset_dir = "../output/" + dataset_name + "/" + dataset_type
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    with open(os.path.join(dataset_dir, "coco_data.json")) as f:
-        coco_data = json.load(f)
-    for image in coco_data["images"]:
-        img_path = os.path.join(dataset_dir, image["file_name"])
-        img = cv2.imread(img_path)
-        for ann in coco_data["annotations"]:
-            if image["id"] == ann["image_id"]:
-                draw_region(img, ann["segmentation"])
-                draw_region(img, ann["bbox"])
-        cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
-
-
 cnt_limit = 99999999
 if __name__ == "__main__":
-    do_coco_dataset()
-    try_to()
+    #do_coco_dataset()
+    pass
