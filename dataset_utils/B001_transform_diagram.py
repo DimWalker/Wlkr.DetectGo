@@ -71,22 +71,22 @@ def refresh_matrix(json_obj, M, factor, zoom, dst_pts):
             # 棋盘四个角补正
             # 变更为向内扩展1格，增加特征
             len = int(json_obj["avg_line_len"] / 2)
-            if (r == 0 and c == 0):
+            if r == 0 and c == 0:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - len, y - len)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y - len)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y + len * 4)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - len, y + len * 4)]
-            elif (r == 0 and c == 18):
+            elif r == 0 and c == 18:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y - len)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + len, y - len)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + len, y + len * 4)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y + len * 4)]
-            elif (r == 18 and c == 0):
+            elif r == 18 and c == 0:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - len, y - len * 4)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y - len * 4)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y + len)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - len, y + len)]
-            elif (r == 18 and c == 18):
+            elif r == 18 and c == 18:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y - len * 4)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + len, y - len * 4)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + len, y + len)]

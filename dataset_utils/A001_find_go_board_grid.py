@@ -7,7 +7,7 @@ import numpy as np
 
 from Wlkr.iocr_utils import calc_distance
 
-mid_dir = "../output"
+mid_dir = "../output/mid_files"
 # 设置保存计数器
 cnt_save = 0
 
@@ -36,20 +36,26 @@ def save_middle_mat(img, name):
 
 def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
                           , crop_px=None, brightness=None):
+    print(image_path)
     # 读取图像
     img = cv2.imread(image_path)
+    cp_img = img
     if crop_px and isinstance(crop_px, int):
         height, width = img.shape[:2]
         # 裁剪图像
-        img = img[crop_px:height - crop_px, crop_px:width - crop_px]
+        cp_img = img[crop_px:height - crop_px, crop_px:width - crop_px]
+    elif crop_px and isinstance(crop_px, list):
+        height, width = img.shape[:2]
+        # 裁剪图像
+        cp_img = img[crop_px[1]:height - crop_px[3], crop_px[0]:width - crop_px[2]]
 
     if brightness and isinstance(brightness, int):
         # 图像亮度
-        img = cv2.add(img, np.ones_like(img) * brightness, dtype=cv2.CV_8U)
-        save_middle_mat(img, "brightness")
+        cp_img = cv2.add(cp_img, np.ones_like(cp_img) * brightness, dtype=cv2.CV_8U)
+        save_middle_mat(cp_img, "brightness")
 
     # 灰度
-    binary_inv = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    binary_inv = cv2.cvtColor(cp_img, cv2.COLOR_BGR2GRAY)
     save_middle_mat(binary_inv, "gray")
 
     # 二值化
@@ -131,6 +137,8 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
     # for p in center_points:
     #     img[p[0]][p[1]] = [0, 0, 255]
     #     intersection_image[p[0]][p[1]] = 0
+    # save_middle_mat(img, "red_img")
+    # save_middle_mat(intersection_image, "red_itr")
 
     center_points = sorted(center_points, key=lambda x: x[0])
     center_points = sorted(center_points, key=lambda x: x[1])
@@ -138,9 +146,6 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
     # 输出中心点坐标
     print("center_points:", center_points)
     print("points_count: " + str(points_count))
-
-    save_middle_mat(img, "red_img")
-    save_middle_mat(intersection_image, "red_itr")
 
     if points_count != 361:
         raise Exception("交点数目错误，19线棋盘应为361点: " + image_path)
@@ -190,22 +195,77 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
 
 
 def try_to_find():
-    img_path = r"../assets/material/O001.png"
-    reset_dir()
-    find_go_board_squares(img_path)
+    pass
+    # img_path = r"../assets/material/O001.png"
+    # reset_dir()
+    # find_go_board_squares(img_path)
 
-    img_path = r"../assets/material/O002.png"
-    reset_dir()
-    find_go_board_squares(img_path, crop_px=5)
+    # img_path = r"../assets/material/O002.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, crop_px=5)
 
-    img_path = r"../assets/material/O003.png"
-    reset_dir()
-    find_go_board_squares(img_path, bin_threshold=96, crop_px=5)
+    # img_path = r"../assets/material/O003.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, bin_threshold=96, crop_px=5)
 
-    # 这张图黑白是反的，还需要调整亮度
-    img_path = r"../assets/material/O004.png"
-    reset_dir()
-    find_go_board_squares(img_path, bin_threshold=-128, crop_px=40, brightness=-50)
+    # # 这张图黑白是反的，还需要调整亮度
+    # img_path = r"../assets/material/O004.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, bin_threshold=-128, crop_px=40, brightness=-50)
+
+    # img_path = r"../assets/material/O005.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, bin_threshold=96)
+    #
+    # img_path = r"../assets/material/O006.png"
+    # reset_dir()
+    # find_go_board_squares(img_path)
+
+    # img_path = r"../assets/material/O007.png"
+    # reset_dir()
+    # find_go_board_squares(img_path,bin_threshold=96)
+
+    # img_path = r"../assets/material/O008.png"
+    # reset_dir()
+    # find_go_board_squares(img_path , bin_threshold=96, crop_px=30)
+
+    # img_path = r"../assets/material/O009.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, crop_px=30)
+
+    # img_path = r"../assets/material/O010.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, crop_px=50)
+
+    # img_path = r"../assets/material/O011.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, bin_threshold=96, crop_px=[60, 60, 70, 70])
+
+    # img_path = r"../assets/material/O012.png"
+    # reset_dir()
+    # find_go_board_squares(img_path,bin_threshold=96, crop_px=[70,50,70,70])
+
+    # img_path = r"../assets/material/O013.png"
+    # reset_dir()
+    # find_go_board_squares(img_path ,bin_threshold=-128, crop_px=40, brightness=-50)
+
+    # img_path = r"../assets/material/O014.png"
+    # reset_dir()
+    # find_go_board_squares(img_path,bin_threshold=180, crop_px=60)
+
+    # img_path = r"../assets/material/O015.png"
+    # reset_dir()
+    # find_go_board_squares(img_path)
+
+    # img_path = r"../assets/material/O016.png"
+    # reset_dir()
+    # find_go_board_squares(img_path)
+
+    # img_path = r"../assets/material/O017.png"
+    # reset_dir()
+    # find_go_board_squares(img_path, crop_px=60)
+
+    # 这张得想新算法     XXXXO013.png
 
 
 if __name__ == "__main__":
