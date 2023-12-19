@@ -19,6 +19,20 @@ def combine_scene_image(jpg_path, png_path, train_size=640):
     png_img = cv2.imread(png_path, cv2.IMREAD_UNCHANGED)
     jpg_h, jpg_w, _ = jpg_img.shape
     png_h, png_w, _ = png_img.shape
+
+    # 上一步transform_diagram最大图片是500像素，需要保证大于png
+    min_jpg_len = min(jpg_h, jpg_w)
+    max_png_len = max(png_h, png_w)
+    if min_jpg_len <= max_png_len:
+        new_len = max_png_len + 100
+        if jpg_w < jpg_h:
+            jpg_h = int(new_len / jpg_w * jpg_h)
+            jpg_w = new_len
+        else:
+            jpg_w = int(new_len / jpg_h * jpg_w)
+            jpg_h = new_len
+        jpg_img = cv2.resize(jpg_img, (jpg_w, jpg_h))
+
     # 随机偏移
     offset_x = random.randint(0, jpg_w - png_w)
     offset_y = random.randint(0, jpg_h - png_h)
@@ -266,5 +280,5 @@ def do_coco_dataset():
 
 cnt_limit = 99999999
 if __name__ == "__main__":
-    #do_coco_dataset()
-    pass
+    do_coco_dataset()
+    #pass

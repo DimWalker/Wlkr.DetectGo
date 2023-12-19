@@ -180,6 +180,10 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
         for r, row in enumerate(matrix):
             for c, cell in enumerate(row):
                 matrix[r][c] = (cell[0] + crop_px, cell[1] + crop_px)
+    elif crop_px and isinstance(crop_px, list):
+        for r, row in enumerate(matrix):
+            for c, cell in enumerate(row):
+                matrix[r][c] = (cell[0] + crop_px[0], cell[1] + crop_px[1])
 
     for row in matrix:
         print('1,' * len(row))
@@ -237,13 +241,13 @@ def try_to_find():
     # reset_dir()
     # find_go_board_squares(img_path, crop_px=50)
 
-    # img_path = r"../assets/material/O011.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, bin_threshold=96, crop_px=[60, 60, 70, 70])
+    img_path = r"../assets/material/O011.png"
+    reset_dir()
+    find_go_board_squares(img_path, bin_threshold=96, crop_px=[60, 60, 70, 70])
 
-    # img_path = r"../assets/material/O012.png"
-    # reset_dir()
-    # find_go_board_squares(img_path,bin_threshold=96, crop_px=[70,50,70,70])
+    img_path = r"../assets/material/O012.png"
+    reset_dir()
+    find_go_board_squares(img_path, bin_threshold=96, crop_px=[70, 50, 70, 70])
 
     # img_path = r"../assets/material/O013.png"
     # reset_dir()

@@ -45,7 +45,7 @@ def random_perspective_transform(image, factor=100):
 
     # 数据集图片是683 * 512或 512 * 683
     # 控制在500像素以内
-    zoom = random.randint(3, 10) / 20
+    zoom = random.randint(4, 10) / 20
     # 计算新的宽度和高度
     new_width = int(n_w * zoom)
     new_height = int(n_h * zoom)

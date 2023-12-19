@@ -29,17 +29,17 @@ categories_list = [
         "id": 2,
         "name": "corner",
         "supercategory": "board"
+    },
+    {
+        "id": 3,
+        "name": "row",
+        "supercategory": "board"
+    },
+    {
+        "id": 4,
+        "name": "col",
+        "supercategory": "board"
     }
-    # {
-    #     "id": ,
-    #     "name": "row",
-    #     "supercategory": "board"
-    # }
-    # {
-    #     "id": ,
-    #     "name": "col",
-    #     "supercategory": "board"
-    # }
 
 ]
 image_info_id = 0
@@ -92,6 +92,7 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
     ann_list.append(annotation_info)
     diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
 
+    # 棋子
     for r, row in enumerate(json_obj["regions"]):
         for c, cell in enumerate(row):
             if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):
@@ -109,6 +110,50 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
                     "iscrowd": 0
                 }
                 ann_list.append(annotation_info)
+
+    # 行
+    for r, row in enumerate(json_obj["regions"]):
+        row_region = [[row[0][0][0], row[0][0][1]],
+                      [row[18][1][0], row[18][1][1]],
+                      [row[18][2][0], row[18][2][1]],
+                      [row[0][3][0], row[0][3][0]]]
+        annotation_info_id += 1
+        seg, area, roi = cale_ppt_from_region(row_region)
+        cat_id = find_category_id("row")
+        # 定义注释信息
+        annotation_info = {
+            "id": annotation_info_id,
+            "image_id": image_info_id,
+            "category_id": cat_id,  # 替换为实际类别ID
+            "segmentation": [seg],
+            "area": area,  # 替换为实际区域面积
+            "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+            "iscrowd": 0
+        }
+        ann_list.append(annotation_info)
+
+    for c in range(19):
+        col_region = [
+            [json_obj["regions"][0][c][0][0], json_obj["regions"][0][c][0][1]],
+            [json_obj["regions"][0][c][1][0], json_obj["regions"][0][c][1][1]],
+            [json_obj["regions"][18][c][2][0], json_obj["regions"][18][c][2][1]],
+            [json_obj["regions"][18][c][3][0], json_obj["regions"][18][c][3][1]],
+        ]
+        annotation_info_id += 1
+        seg, area, roi = cale_ppt_from_region(col_region)
+        cat_id = find_category_id("col")
+        # 定义注释信息
+        annotation_info = {
+            "id": annotation_info_id,
+            "image_id": image_info_id,
+            "category_id": cat_id,  # 替换为实际类别ID
+            "segmentation": [seg],
+            "area": area,  # 替换为实际区域面积
+            "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+            "iscrowd": 0
+        }
+        ann_list.append(annotation_info)
+
     return image_info, ann_list
 
 
@@ -126,8 +171,8 @@ def cale_ppt_from_region(region):
     return seg, area, roi
 
 
-dataset_name = "go_board_corner_dataset"
-dataset_type = "train"
+dataset_name = "go_board_dataset_v3"
+dataset_type = "eval"
 
 
 def do_coco_dataset():

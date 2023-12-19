@@ -7,16 +7,16 @@ import json
 from tqdm import tqdm
 import argparse
 
-ds_train_path = "../output/go_board_corner_dataset/train/"
-ds_eval_path = "../output/go_board_corner_dataset/eval/"
+ds_train_path = "../output/go_board_dataset_v3/train/"
+ds_eval_path = "../output/go_board_dataset_v3/eval/"
 coco_json_name = "coco_data.json"
 coco_label_name = "coco_data.txt"
 
 parser = argparse.ArgumentParser()
 # 这里根据自己的json文件位置，换成自己的就行
-parser.add_argument('--json_path', default=ds_eval_path + coco_json_name, type=str, help="input: coco format(json)")
+parser.add_argument('--json_path', default=ds_train_path + coco_json_name, type=str, help="input: coco format(json)")
 # 这里设置.txt文件保存位置
-parser.add_argument('--save_path', default=ds_eval_path, type=str,
+parser.add_argument('--save_path', default=ds_train_path, type=str,
                     help="specify where to save the output dir of labels")
 arg = parser.parse_args()
 
@@ -68,5 +68,5 @@ if __name__ == '__main__':
         f_txt.close()
         # 将图片的相对路径写入train2017或val2017的路径
         # todo: 待改进，相对路径在coco_data.json中
-        list_file.write('./images/train2017/%s.jpg\n' % (head))
+        list_file.write('%s.jpg\n' % (head))
     list_file.close()
