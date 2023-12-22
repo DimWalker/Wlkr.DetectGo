@@ -3,3 +3,4 @@ __pycache__/
 uploadfiles/
 output/
 assets/unclassified/
+runs/
