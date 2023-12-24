@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 
 from Wlkr.Common.FileUtils import GetFileNameSplit
+from dataset_utils.B000_combine_board import load_diagram
 
 tmp_disable_factor = 37
 factor_cnt = 0
@@ -56,7 +57,10 @@ def random_perspective_transform(image, factor=100):
     return resized_image, M, factor, zoom, dst_pts
 
 
-def refresh_matrix(json_obj, M, factor, zoom, dst_pts):
+def refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path):
+    # 必须放在前面
+    json_obj = calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path)
+    # 这段会改变json_obj的原来的的值
     json_obj["dst_pts"] = dst_pts.astype(np.int32).tolist()
     regions = []
     for r, row in enumerate(json_obj["matrix"]):
@@ -65,43 +69,86 @@ def refresh_matrix(json_obj, M, factor, zoom, dst_pts):
             x, y = pnt
             x += factor
             y += factor
-            # 中心点不满足需求
             json_obj["matrix"][r][c] = [int(f * zoom) for f in calc_warp_point(M, x, y)]
 
             # 棋盘四个角补正
             # 变更为向内扩展1格，增加特征
-            len = int(json_obj["avg_line_len"] / 2)
+            length = int(json_obj["avg_line_len"] / 2)
             if r == 0 and c == 0:
-                lt = [int(f * zoom) for f in calc_warp_point(M, x - len, y - len)]
-                rt = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y - len)]
-                rb = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y + len * 4)]
-                lb = [int(f * zoom) for f in calc_warp_point(M, x - len, y + len * 4)]
+                lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length)]
+                rt = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y - length)]
+                rb = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y + length * 4)]
+                lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length * 4)]
             elif r == 0 and c == 18:
-                lt = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y - len)]
-                rt = [int(f * zoom) for f in calc_warp_point(M, x + len, y - len)]
-                rb = [int(f * zoom) for f in calc_warp_point(M, x + len, y + len * 4)]
-                lb = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y + len * 4)]
+                lt = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y - length)]
+                rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length)]
+                rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length * 4)]
+                lb = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y + length * 4)]
             elif r == 18 and c == 0:
-                lt = [int(f * zoom) for f in calc_warp_point(M, x - len, y - len * 4)]
-                rt = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y - len * 4)]
-                rb = [int(f * zoom) for f in calc_warp_point(M, x + len * 4, y + len)]
-                lb = [int(f * zoom) for f in calc_warp_point(M, x - len, y + len)]
+                lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length * 4)]
+                rt = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y - length * 4)]
+                rb = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y + length)]
+                lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length)]
             elif r == 18 and c == 18:
-                lt = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y - len * 4)]
-                rt = [int(f * zoom) for f in calc_warp_point(M, x + len, y - len * 4)]
-                rb = [int(f * zoom) for f in calc_warp_point(M, x + len, y + len)]
-                lb = [int(f * zoom) for f in calc_warp_point(M, x - len * 4, y + len)]
+                lt = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y - length * 4)]
+                rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length * 4)]
+                rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length)]
+                lb = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y + length)]
             else:
                 # 棋子region
-                lt = [int(f * zoom) for f in calc_warp_point(M, x - len, y - len)]
-                rt = [int(f * zoom) for f in calc_warp_point(M, x + len, y - len)]
-                rb = [int(f * zoom) for f in calc_warp_point(M, x + len, y + len)]
-                lb = [int(f * zoom) for f in calc_warp_point(M, x - len, y + len)]
+                lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length)]
+                rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length)]
+                rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length)]
+                lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length)]
             line.append([lt, rt, rb, lb])
             # 4个角区域
         regions.append(line)
     json_obj["regions"] = regions
     json_obj["avg_line_len"] = int(json_obj["avg_line_len"] * zoom)
+    return json_obj
+
+
+def calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path):
+    diagram = load_diagram(dia_tmpl_path)
+    with open("../assets/material/piece_segmentation.json", "r", encoding="utf-8") as f:
+        p_seg = json.load(f)
+    with open("../assets/material/empty_segmentation.json", "r", encoding="utf-8") as f:
+        e_seg = json.load(f)
+    # 棋子原图像素60px
+    zoom_len = json_obj["avg_line_len"] / 60
+    for s, seq in enumerate(p_seg):
+        seq_x, seq_y = seq
+        p_seg[s] = [seq_x * zoom_len, seq_y * zoom_len]
+    for s, seq in enumerate(e_seg):
+        seq_x, seq_y = seq
+        e_seg[s] = [seq_x * zoom_len, seq_y * zoom_len]
+
+    length = int(json_obj["avg_line_len"] / 2)
+    pieces_seg = []
+    for r, row in enumerate(json_obj["matrix"]):
+        line = []
+        for c, pnt in enumerate(row):
+            x, y = pnt
+            # 棋子region左上角
+            x += factor - length
+            y += factor - length
+            warp_seq = []
+            # 需要棋谱
+            if diagram[r][c] == 0:
+                for s, seq in enumerate(e_seg):
+                    seq_x, seq_y = seq
+                    warp_seq.append(
+                        [int(f * zoom) for f in calc_warp_point(M, seq_x + x, seq_y + y)]
+                    )
+            else:
+                for s, seq in enumerate(p_seg):
+                    seq_x, seq_y = seq
+                    warp_seq.append(
+                        [int(f * zoom) for f in calc_warp_point(M, seq_x + x, seq_y + y)]
+                    )
+            line.append(warp_seq)
+        pieces_seg.append(line)
+    json_obj["pieces_seg"] = pieces_seg
     return json_obj
 
 
@@ -117,9 +164,9 @@ def calc_warp_point(M, ori_x, ori_y):
 
 def try_to_warp():
     # 读取围棋棋盘图片
-    board_image = cv2.imread("../output/diagram_img/O001_20231214140252621478.png",
+    board_image = cv2.imread("../output/diagram_img/O001_20231219215605718850.png",
                              cv2.IMREAD_UNCHANGED)
-
+    dia_tmpl_path = "../output/diagram/aa_my_label/003.txt"
     # 生成透视变换后的图像
     transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
 
@@ -131,13 +178,17 @@ def try_to_warp():
     # cv2.destroyAllWindows()
     with open("../assets/material/O001.png.json", "r", encoding="utf-8") as r:
         json_obj = json.load(r)
-        json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts)
+        json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
     with open("../output/warp.png.json", "w", encoding="utf-8") as w:
         json.dump(json_obj, w)
 
-    for row in json_obj["regions"]:
+    # for row in json_obj["regions"]:
+    #     for region in row:
+    #         draw_region(transformed_image, region)
+    for row in json_obj["pieces_seg"]:
         for region in row:
             draw_region(transformed_image, region)
+
     cv2.imwrite("../output/draw_region.png", transformed_image)
 
 
@@ -166,7 +217,7 @@ def do_warp():
         lines = f.readlines()
     # diagrams = os.listdir(diagram_dir)
     for line in lines:
-        dia_path = line.rstrip().split('\t')[-1]
+        dia_tmpl_path, dia_path = line.rstrip().split('\t')
         print("warping " + dia_path)
         bn, pre, ext = GetFileNameSplit(dia_path)
         if not dia_path.endswith(".png"):
@@ -179,7 +230,7 @@ def do_warp():
         tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
         with open(tmpl_path, "r", encoding="utf-8") as r:
             json_obj = json.load(r)
-            json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts)
+            json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
         with open(save_path + ".json", "w", encoding="utf-8") as w:
             json.dump(json_obj, w)
 

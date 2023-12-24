@@ -116,7 +116,7 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
         row_region = [[row[0][0][0], row[0][0][1]],
                       [row[18][1][0], row[18][1][1]],
                       [row[18][2][0], row[18][2][1]],
-                      [row[0][3][0], row[0][3][0]]]
+                      [row[0][3][0], row[0][3][1]]]
         annotation_info_id += 1
         seg, area, roi = cale_ppt_from_region(row_region)
         cat_id = find_category_id("row")
@@ -169,10 +169,6 @@ def cale_ppt_from_region(region):
     # 计算四边形的面积
     area = cv2.contourArea(contour)
     return seg, area, roi
-
-
-dataset_name = "go_board_dataset_v3"
-dataset_type = "eval"
 
 
 def do_coco_dataset():
@@ -245,6 +241,8 @@ def try_to():
         cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
 
 
+dataset_name = "go_board_dataset_v3"
+dataset_type = "train"
 cnt_limit = 99999999
 if __name__ == "__main__":
     do_coco_dataset()

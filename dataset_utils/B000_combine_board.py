@@ -4,6 +4,7 @@ import os
 import random
 import zipfile
 from datetime import datetime
+from io import StringIO
 
 import numpy as np
 from PIL import Image
@@ -11,6 +12,14 @@ from PIL import Image
 from Wlkr.Common.FileUtils import GetFileNameSplit
 
 mtrl_dir = r"../assets/material"
+
+
+def load_diagram(diagram_path):
+    with open(diagram_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    content = StringIO(content.replace("[", "").replace("]", ""))
+    diagram = np.genfromtxt(content, delimiter=' ', dtype=None, encoding="utf-8")
+    return diagram
 
 
 def init_material_list():
@@ -57,9 +66,8 @@ def combine_board_image(o_path, b_path, w_path, diagram_path=None, save_path=Non
     white_img = white_img.resize((board_info["avg_line_len"], board_info["avg_line_len"]))
 
     if diagram_path:
-        with open(diagram_path, "r", encoding="utf-8") as f:
-            print("handling :" + diagram_path)
-            diagram = np.genfromtxt(diagram_path, delimiter=' ', dtype=None, encoding="utf-8")
+        print("handling :" + diagram_path)
+        diagram = load_diagram(diagram_path)
         for r, row in enumerate(diagram):
             for c, cell in enumerate(row):
                 if cell == 1:
@@ -148,6 +156,7 @@ def do_combine():
 
     with open(os.path.join(output_dir, "label.txt"), "w", encoding="utf-8") as l:
         l.writelines(label)
+
 
 cnt_limit = 50000
 if __name__ == "__main__":
