@@ -72,7 +72,8 @@ def board_warp_back(image_path, output_dir):
         cv2.imwrite(os.path.join(output_dir, pre + "_min_max" + ext), crop_img)
 
         # 计算rec任务，棋子高32像素，32*19=608
-        src_pts = [[0, 0], [608, 0], [608, 608], [0, 608]]
+        wb_len=608
+        src_pts = [[0, 0], [wb_len, 0], [wb_len, wb_len], [0, wb_len]]
         dst_pts = [
             calc_anchor_point(src_pts[0], corners),
             calc_anchor_point(src_pts[1], corners),
@@ -81,7 +82,7 @@ def board_warp_back(image_path, output_dir):
         ]
         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
         new_image = img.copy()
-        warped_image = cv2.warpPerspective(new_image, M, (640, 640), borderMode=cv2.BORDER_CONSTANT,
+        warped_image = cv2.warpPerspective(new_image, M, (wb_len, wb_len), borderMode=cv2.BORDER_CONSTANT,
                                            borderValue=(255, 255, 255, 0))
         # cv2.imshow('corner_warp_crop', warped_image)
         cv2.imwrite(os.path.join(output_dir, pre + "_warp_back" + ext), warped_image)
