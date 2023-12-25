@@ -16,7 +16,7 @@ info = {
     "version": "1.0",
     "year": 2023,
     "contributor": "Walker Chan",
-    "date_created": "2023-12-14"
+    "date_created": datetime.now().strftime("%Y-%m-%d")
 }
 licenses_list = []
 categories_list = [
@@ -92,7 +92,7 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
     ann_list.append(annotation_info)
     diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
 
-    # 棋子
+    # 角
     for r, row in enumerate(json_obj["regions"]):
         for c, cell in enumerate(row):
             if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):

@@ -6,99 +6,10 @@ from datetime import datetime
 import cv2
 import numpy as np
 
-
-def combine_scene_image(jpg_path, png_path, train_size=640):
-    """
-
-    :param jpg_path:
-    :param png_path:
-    :param train_size: Yolo训练的输出尺寸正方形
-    :return:
-    """
-    jpg_img = cv2.imread(jpg_path)
-    png_img = cv2.imread(png_path, cv2.IMREAD_UNCHANGED)
-    jpg_h, jpg_w, _ = jpg_img.shape
-    png_h, png_w, _ = png_img.shape
-
-    # 上一步transform_diagram最大图片是500像素，需要保证大于png
-    min_jpg_len = min(jpg_h, jpg_w)
-    max_png_len = max(png_h, png_w)
-    if min_jpg_len <= max_png_len:
-        new_len = max_png_len + 100
-        if jpg_w < jpg_h:
-            jpg_h = int(new_len / jpg_w * jpg_h)
-            jpg_w = new_len
-        else:
-            jpg_w = int(new_len / jpg_h * jpg_w)
-            jpg_h = new_len
-        jpg_img = cv2.resize(jpg_img, (jpg_w, jpg_h))
-
-    # 随机偏移
-    offset_x = random.randint(0, jpg_w - png_w)
-    offset_y = random.randint(0, jpg_h - png_h)
-    # 获取 PNG 图像的 Alpha 通道
-    alpha_channel = png_img[:, :, 3]
-    # 将 PNG 图像合成到 JPG 图像中
-    for c in range(0, 3):
-        jpg_img[offset_y:png_h + offset_y, offset_x:png_w + offset_x, c] = \
-            jpg_img[offset_y:png_h + offset_y, offset_x:png_w + offset_x, c] * \
-            (1 - alpha_channel / 255) + png_img[:, :, c] * (alpha_channel / 255)
-
-    if jpg_h > jpg_w:
-        zoom = train_size / jpg_h
-    else:
-        zoom = train_size / jpg_w
-
-    if zoom != 1:
-        offset_x = int(offset_x * zoom)
-        offset_y = int(offset_y * zoom)
-        new_width = int(jpg_w * zoom)
-        new_height = int(jpg_h * zoom)
-        jpg_img = cv2.resize(jpg_img, (new_width, new_height))
-
-    return jpg_img, offset_x, offset_y, zoom
-
-
-def offset_json_obj(json_path, offset_x, offset_y, zoom):
-    with open(json_path, "r", encoding="utf-8") as f:
-        json_obj = json.load(f)
-    for r, row in enumerate(json_obj["matrix"]):
-        for c, cell in enumerate(row):
-            json_obj["matrix"][r][c] = [cell[0] * zoom + offset_x, cell[1] * zoom + offset_y]
-    for p, point in enumerate(json_obj["dst_pts"]):
-        json_obj["dst_pts"][p] = [point[0] * zoom + offset_x, point[1] * zoom + offset_y]
-    for r, row in enumerate(json_obj["regions"]):
-        for c, cell in enumerate(row):
-            for rg, region in enumerate(cell):
-                json_obj["regions"][r][c][rg] = [region[0] * zoom + offset_x, region[1] * zoom + offset_y]
-    for r, row in enumerate(json_obj["pieces_seg"]):
-        for c, cell in enumerate(row):
-            for rg, region in enumerate(cell):
-                json_obj["pieces_seg"][r][c][rg] = [region[0] * zoom + offset_x, region[1] * zoom + offset_y]
-    return json_obj
-
-
-def draw_region(image, pts):
-    if len(pts) == 1:
-        # 顶点坐标需要reshape成OpenCV所需的格式
-        points = np.array(pts[0], np.int32).reshape((4, 2))
-        # 画四边形
-        cv2.polylines(image, [points], isClosed=True,
-                      color=(
-                          random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
-                      thickness=1)
-    else:
-        # 定义矩形的左上角和右下角坐标
-        x1, y1 = pts[0], pts[1]
-        x2, y2 = pts[0] + pts[2], pts[1] + pts[3]
-        # 定义矩形的颜色（BGR 格式）
-        color = (0, 255, 0)  # 这里使用绿色
-        # 绘制矩形
-        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness=1)
-
-
 ################## Coco Dataset
 # 定义类别信息
+from dataset_utils.B000_combine_board import load_diagram
+from dataset_utils.B002_combine_scene import combine_scene_image, offset_json_obj, draw_region
 
 info = {
     "description": "COCO Dataset",
@@ -131,20 +42,21 @@ categories_list = [
         "supercategory": "board"
     },
     # {
-    #     "id": ,
+    #     "id": 2,
+    #     "name": "corner",
+    #     "supercategory": "board"
+    # },
+    # {
+    #     "id": 3,
     #     "name": "row",
     #     "supercategory": "board"
-    # }
+    # },
     # {
-    #     "id": ,
+    #     "id": 4,
     #     "name": "col",
     #     "supercategory": "board"
     # }
-    # {
-    #     "id": ,
-    #     "name": "corner",
-    #     "supercategory": "board"
-    # }
+
 ]
 image_info_id = 0
 annotation_info_id = 0
@@ -194,24 +106,29 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
         "iscrowd": 0
     }
     ann_list.append(annotation_info)
-    diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
+    diagram =load_diagram(dia_path )
 
-    for r, row in enumerate(json_obj["regions"]):
+    # 棋子
+    for r, row in enumerate(json_obj["pieces_seg"]):
         for c, cell in enumerate(row):
-            annotation_info_id += 1
-            seg, area, roi = cale_ppt_from_region(cell)
-            cat_id = find_category_id("black" if diagram[r][c] == 1 else ("white" if diagram[r][c] == 2 else "empty"))
-            # 定义注释信息
-            annotation_info = {
-                "id": annotation_info_id,
-                "image_id": image_info_id,
-                "category_id": cat_id,  # 替换为实际类别ID
-                "segmentation": [seg],
-                "area": area,  # 替换为实际区域面积
-                "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
-                "iscrowd": 0
-            }
-            ann_list.append(annotation_info)
+            if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):
+                annotation_info_id += 1
+                seg, area, roi = cale_ppt_from_region(cell)
+                cat_id = find_category_id("black" if diagram[r][c] == 1 else ("white" if diagram[r][c] == 2 else "empty"))
+                # 定义注释信息
+                annotation_info = {
+                    "id": annotation_info_id,
+                    "image_id": image_info_id,
+                    "category_id": cat_id,  # 替换为实际类别ID
+                    "segmentation": [seg],
+                    "area": area,  # 替换为实际区域面积
+                    "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+                    "iscrowd": 0
+                }
+                ann_list.append(annotation_info)
+
+
+
     return image_info, ann_list
 
 
@@ -230,10 +147,10 @@ def cale_ppt_from_region(region):
 
 
 def do_coco_dataset():
-    output_dir = "../output/dataset"
+    output_dir = "../output/" + dataset_name + "/" + dataset_type
     # 手动下载并解压到 scene_dir
     # https://aistudio.baidu.com/datasetdetail/93975
-    scene_dir = "../output/scene_images"
+    scene_dir = "../output/scene_images_" + dataset_type
     # diagram_warp_dir = "../output/diagram_warp"
     label_path = "../output/diagram_img/label.txt"
     if not os.path.exists(output_dir):
@@ -269,7 +186,7 @@ def do_coco_dataset():
         jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
         json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_y, zoom)
 
-        img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, warp_path, scene)
+        img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, scene)
         cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
         images.append(img_info)
         annotations += ann_list
@@ -282,7 +199,26 @@ def do_coco_dataset():
         json.dump(coco_data, json_file, indent=2)
 
 
+def try_to():
+    output_dir = "../output/scene_draw/" + dataset_type
+    dataset_dir = "../output/" + dataset_name + "/" + dataset_type
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    with open(os.path.join(dataset_dir, "coco_data.json")) as f:
+        coco_data = json.load(f)
+    for image in coco_data["images"]:
+        img_path = os.path.join(dataset_dir, image["file_name"])
+        img = cv2.imread(img_path)
+        for ann in coco_data["annotations"]:
+            if image["id"] == ann["image_id"]:
+                draw_region(img, ann["segmentation"])
+                draw_region(img, ann["bbox"])
+        cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
+
+
+dataset_name = "go_board_seg_dataset"
+dataset_type = "train"
 cnt_limit = 99999999
 if __name__ == "__main__":
     do_coco_dataset()
-    #pass
+    #try_to()

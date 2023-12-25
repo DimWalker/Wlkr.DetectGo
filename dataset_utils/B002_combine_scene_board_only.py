@@ -15,7 +15,7 @@ info = {
     "version": "1.0",
     "year": 2023,
     "contributor": "Walker Chan",
-    "date_created": "2023-12-14"
+    "date_created": datetime.now().strftime("%Y-%m-%d")
 }
 licenses_list = []
 categories_list = [

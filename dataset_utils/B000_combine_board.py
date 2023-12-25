@@ -13,7 +13,6 @@ from Wlkr.Common.FileUtils import GetFileNameSplit
 
 mtrl_dir = r"../assets/material"
 
-
 def load_diagram(diagram_path):
     with open(diagram_path, "r", encoding="utf-8") as f:
         content = f.read()
