@@ -280,7 +280,7 @@ def try_to():
 
 
 dataset_name = "go_board_dataset_v3"
-dataset_type = "train"
+dataset_type = "eval"
 cnt_limit = 99999999
 # lock_obj = threading.Lock()
 if __name__ == "__main__":

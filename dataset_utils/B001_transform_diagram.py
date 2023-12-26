@@ -3,11 +3,6 @@ import json
 import os
 import random
 import threading
-import time
-
-import cv2
-import numpy as np
-
 import cv2
 import numpy as np
 
