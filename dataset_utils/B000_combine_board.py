@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import threading
 import zipfile
 from datetime import datetime
 from io import StringIO
@@ -12,6 +13,7 @@ from PIL import Image
 from Wlkr.Common.FileUtils import GetFileNameSplit
 
 mtrl_dir = r"../assets/material"
+
 
 def load_diagram(diagram_path):
     with open(diagram_path, "r", encoding="utf-8") as f:
@@ -136,7 +138,9 @@ def do_combine():
 
     label = []
     cnt = 0
+    threads = []
     for d in diagram_list:
+
         r0 = random.randint(0, len(o) - 1)
         r1 = random.randint(0, len(b) - 1)
         r2 = random.randint(0, len(w) - 1)
@@ -147,17 +151,33 @@ def do_combine():
 
         _, pre, _ = GetFileNameSplit(o[r0])
         save_path = os.path.join(output_dir, f"{pre}_{formatted_datetime}.png")
-        combine_board_image(o[r0], b[r1], w[r2], diagram_path=d, save_path=save_path)
-        label.append(d + "\t" + save_path + "\n")
+        # combine_board_image(o[r0], b[r1], w[r2], diagram_path=d, save_path=save_path)
+        # label.append(d + "\t" + save_path + "\n")
+
+        thread = threading.Thread(target=do_combine_by_thread,
+                                  args=(label, d, save_path, o[r0], b[r1], w[r2]))
+        thread.start()
+        threads.append(thread)
+
         cnt += 1
         if cnt == cnt_limit:
             break
 
+    # 等待所有线程完成
+    for thread in threads:
+        thread.join()
     with open(os.path.join(output_dir, "label.txt"), "w", encoding="utf-8") as l:
         l.writelines(label)
 
 
+def do_combine_by_thread(label, d, save_path, op, bp, wp):
+    combine_board_image(op, bp, wp, diagram_path=d, save_path=save_path)
+    with lock_obj:
+        label.append(d + "\t" + save_path + "\n")
+
+
 cnt_limit = 50000
+lock_obj = threading.Lock()
 if __name__ == "__main__":
     # try_to_combine()
     do_combine()

@@ -2,6 +2,7 @@
 import json
 import os
 import random
+import threading
 
 import cv2
 import numpy as np
@@ -245,25 +246,49 @@ def do_warp():
     with open(label_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
     # diagrams = os.listdir(diagram_dir)
+    threads = []
     for line in lines:
         dia_tmpl_path, dia_path = line.rstrip().split('\t')
         print("warping " + dia_path)
         bn, pre, ext = GetFileNameSplit(dia_path)
         if not dia_path.endswith(".png"):
             continue
-        board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
-        transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
-        save_path = os.path.join(output_dir, bn)
-        cv2.imwrite(save_path, transformed_image)
-        tmpl_name = pre.split('_')[0]
-        tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
-        with open(tmpl_path, "r", encoding="utf-8") as r:
-            json_obj = json.load(r)
-            json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
-        with open(save_path + ".json", "w", encoding="utf-8") as w:
-            json.dump(json_obj, w)
+
+        # board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
+        # transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
+        # save_path = os.path.join(output_dir, bn)
+        # cv2.imwrite(save_path, transformed_image)
+        # tmpl_name = pre.split('_')[0]
+        # tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
+        # with open(tmpl_path, "r", encoding="utf-8") as r:
+        #     json_obj = json.load(r)
+        #     json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
+        # with open(save_path + ".json", "w", encoding="utf-8") as w:
+        #     json.dump(json_obj, w)
+        thread = threading.Thread(target=do_warp_by_thread,
+                                  args=(output_dir, mtrl_dir, dia_path, dia_tmpl_path, bn, pre))
+        thread.start()
+        threads.append(thread)
+    # 等待所有线程完成
+    for thread in threads:
+        thread.join()
 
 
+def do_warp_by_thread(output_dir, mtrl_dir, dia_path, dia_tmpl_path, bn, pre):
+    board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
+    transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
+    save_path = os.path.join(output_dir, bn)
+    cv2.imwrite(save_path, transformed_image)
+    tmpl_name = pre.split('_')[0]
+    tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
+    with open(tmpl_path, "r", encoding="utf-8") as r:
+        json_obj = json.load(r)
+        json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
+    with open(save_path + ".json", "w", encoding="utf-8") as w:
+        json.dump(json_obj, w)
+
+
+# lock_obj = threading.Lock()
 if __name__ == "__main__":
     # try_to_warp()
     # arr = np.array([1, 1])
