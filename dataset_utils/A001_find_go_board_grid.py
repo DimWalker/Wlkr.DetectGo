@@ -39,15 +39,14 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
     print(image_path)
     # 读取图像
     img = cv2.imread(image_path)
-    cp_img = img
+    height, width = img.shape[:2]
+    min_x, max_x, min_y, max_y = 0, width, 0, height
     if crop_px and isinstance(crop_px, int):
-        height, width = img.shape[:2]
-        # 裁剪图像
-        cp_img = img[crop_px:height - crop_px, crop_px:width - crop_px]
+        min_x, max_x, min_y, max_y = crop_px, width - crop_px, crop_px, height - crop_px
     elif crop_px and isinstance(crop_px, list):
-        height, width = img.shape[:2]
-        # 裁剪图像
-        cp_img = img[crop_px[1]:height - crop_px[3], crop_px[0]:width - crop_px[2]]
+        min_x, max_x, min_y, max_y = crop_px[0], width - crop_px[2], crop_px[1], height - crop_px[3]
+    # 裁剪图像
+    cp_img = img[min_y:max_y, min_x: max_x]
 
     if brightness and isinstance(brightness, int):
         # 图像亮度
@@ -190,6 +189,7 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
     # 保存棋盘数据
     json_path = image_path + ".json"
     json_obj = {
+        "board_region": [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]],
         "matrix": matrix,
         "points_count": points_count,
         "avg_line_len": avg_line_len
@@ -200,46 +200,50 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
 
 def try_to_find():
     pass
-    # img_path = r"../assets/material/O001.png"
-    # reset_dir()
-    # find_go_board_squares(img_path)
+    img_path = r"../assets/material/O001.png"
+    reset_dir()
+    find_go_board_squares(img_path)
 
-    # img_path = r"../assets/material/O002.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, crop_px=5)
+    img_path = r"../assets/material/O002.png"
+    reset_dir()
+    find_go_board_squares(img_path, crop_px=5)
 
-    # img_path = r"../assets/material/O003.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, bin_threshold=96, crop_px=5)
+    img_path = r"../assets/material/O003.png"
+    reset_dir()
+    find_go_board_squares(img_path, bin_threshold=96, crop_px=5)
 
-    # # 这张图黑白是反的，还需要调整亮度
-    # img_path = r"../assets/material/O004.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, bin_threshold=-128, crop_px=40, brightness=-50)
+    # 这张图黑白是反的，还需要调整亮度
+    img_path = r"../assets/material/O004.png"
+    reset_dir()
+    find_go_board_squares(img_path, bin_threshold=-128, crop_px=40, brightness=-50)
 
     # img_path = r"../assets/material/O005.png"
     # reset_dir()
     # find_go_board_squares(img_path, bin_threshold=96)
-    #
-    # img_path = r"../assets/material/O006.png"
-    # reset_dir()
-    # find_go_board_squares(img_path)
 
-    # img_path = r"../assets/material/O007.png"
-    # reset_dir()
-    # find_go_board_squares(img_path,bin_threshold=96)
+    img_path = r"../assets/material/O005.png"
+    reset_dir()
+    find_go_board_squares(img_path, crop_px=60)
 
-    # img_path = r"../assets/material/O008.png"
-    # reset_dir()
-    # find_go_board_squares(img_path , bin_threshold=96, crop_px=30)
+    img_path = r"../assets/material/O006.png"
+    reset_dir()
+    find_go_board_squares(img_path)
 
-    # img_path = r"../assets/material/O009.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, crop_px=30)
+    img_path = r"../assets/material/O007.png"
+    reset_dir()
+    find_go_board_squares(img_path,bin_threshold=96)
 
-    # img_path = r"../assets/material/O010.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, crop_px=50)
+    img_path = r"../assets/material/O008.png"
+    reset_dir()
+    find_go_board_squares(img_path , bin_threshold=96, crop_px=30)
+
+    img_path = r"../assets/material/O009.png"
+    reset_dir()
+    find_go_board_squares(img_path, crop_px=30)
+
+    img_path = r"../assets/material/O010.png"
+    reset_dir()
+    find_go_board_squares(img_path, crop_px=50)
 
     img_path = r"../assets/material/O011.png"
     reset_dir()
@@ -249,25 +253,23 @@ def try_to_find():
     reset_dir()
     find_go_board_squares(img_path, bin_threshold=96, crop_px=[70, 50, 70, 70])
 
-    # img_path = r"../assets/material/O013.png"
-    # reset_dir()
-    # find_go_board_squares(img_path ,bin_threshold=-128, crop_px=40, brightness=-50)
+    img_path = r"../assets/material/O013.png"
+    reset_dir()
+    find_go_board_squares(img_path ,bin_threshold=-128, crop_px=40, brightness=-50)
 
-    # img_path = r"../assets/material/O014.png"
-    # reset_dir()
-    # find_go_board_squares(img_path,bin_threshold=180, crop_px=60)
+    img_path = r"../assets/material/O014.png"
+    reset_dir()
+    find_go_board_squares(img_path,bin_threshold=180, crop_px=60)
 
-    # img_path = r"../assets/material/O015.png"
-    # reset_dir()
-    # find_go_board_squares(img_path)
+    img_path = r"../assets/material/O015.png"
+    reset_dir()
+    find_go_board_squares(img_path)
 
-    # img_path = r"../assets/material/O016.png"
-    # reset_dir()
-    # find_go_board_squares(img_path)
+    img_path = r"../assets/material/O016.png"
+    reset_dir()
+    find_go_board_squares(img_path)
 
-    # img_path = r"../assets/material/O017.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, crop_px=60)
+
 
     # 这张得想新算法     XXXXO013.png
 

@@ -3,6 +3,7 @@ import json
 import os
 import random
 import threading
+import time
 
 import cv2
 import numpy as np
@@ -15,11 +16,19 @@ from dataset_utils.B000_combine_board import load_diagram
 
 tmp_disable_factor = 37
 factor_cnt = 0
+lock_factor_cnt = threading.Lock()
+
+
+def get_next_factor_cnt():
+    global factor_cnt
+    with lock_factor_cnt:
+        factor_cnt += 1
+        sub_id = factor_cnt
+    return sub_id
 
 
 def random_perspective_transform(image, factor=100):
-    global factor_cnt
-    factor_cnt += 1
+    sub_factor_cnt = get_next_factor_cnt()
     h, w = image.shape[:2]
 
     # 创建新的图片
@@ -34,7 +43,7 @@ def random_perspective_transform(image, factor=100):
          [w + factor, h + factor], [0 + factor, h + factor]])
 
     tmp_fac = factor
-    if factor_cnt % tmp_disable_factor == 0:
+    if sub_factor_cnt % tmp_disable_factor == 0:
         tmp_fac = 0
     # 定义目标图像上的四个点，通过随机扰动原始点
     dst_pts = src_pts + np.random.uniform(-tmp_fac, tmp_fac, size=src_pts.shape).astype(np.float32)
@@ -59,16 +68,20 @@ def random_perspective_transform(image, factor=100):
 
 
 def refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path):
-    # 必须放在前面
+    # 由于后面代码会改变json_obj的值，故必须放在前面
     json_obj = calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path)
-    # 这段会改变json_obj的原来的的值
+
     json_obj["dst_pts"] = dst_pts.astype(np.int32).tolist()
     regions = []
     cornets = []
+    # 这段会改变json_obj的原来的的值
+    for p, pt in enumerate(json_obj["board_region"]):
+        x, y = pt
+        json_obj["board_region"][p] = [int(f * zoom) for f in calc_warp_point(M, x, y)]
     for r, row in enumerate(json_obj["matrix"]):
         line = []
-        for c, pnt in enumerate(row):
-            x, y = pnt
+        for c, pt in enumerate(row):
+            x, y = pt
             x += factor
             y += factor
             json_obj["matrix"][r][c] = [int(f * zoom) for f in calc_warp_point(M, x, y)]
@@ -199,22 +212,17 @@ def try_to_warp():
     dia_tmpl_path = "../output/diagram/aa_my_label/003.txt"
     # 生成透视变换后的图像
     transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
-
     # 显示原始图像和变换后的图像
-    # cv2.imshow("Original Board", board_image)
-    # cv2.imshow("Transformed Board", transformed_image)
     cv2.imwrite("../output/warp.png", transformed_image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
     with open("../assets/material/O001.png.json", "r", encoding="utf-8") as r:
         json_obj = json.load(r)
         json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
     with open("../output/warp.png.json", "w", encoding="utf-8") as w:
         json.dump(json_obj, w)
 
-    # for row in json_obj["regions"]:
-    #     for region in row:
-    #         draw_region(transformed_image, region)
+    for row in json_obj["regions"]:
+        for region in row:
+            draw_region(transformed_image, region)
     for row in json_obj["pieces_seg"]:
         for region in row:
             draw_region(transformed_image, region)
@@ -239,56 +247,32 @@ def do_warp():
     mtrl_dir = "../assets/material"
     diagram_dir = "../output/diagram_img"
     label_path = "../output/diagram_img/label.txt"
-
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     with open(label_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
     # diagrams = os.listdir(diagram_dir)
-    threads = []
     for line in lines:
         dia_tmpl_path, dia_path = line.rstrip().split('\t')
-        print("warping " + dia_path)
+
         bn, pre, ext = GetFileNameSplit(dia_path)
         if not dia_path.endswith(".png"):
             continue
-
-        # board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
-        # transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
-        # save_path = os.path.join(output_dir, bn)
-        # cv2.imwrite(save_path, transformed_image)
-        # tmpl_name = pre.split('_')[0]
-        # tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
-        # with open(tmpl_path, "r", encoding="utf-8") as r:
-        #     json_obj = json.load(r)
-        #     json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
-        # with open(save_path + ".json", "w", encoding="utf-8") as w:
-        #     json.dump(json_obj, w)
-        thread = threading.Thread(target=do_warp_by_thread,
-                                  args=(output_dir, mtrl_dir, dia_path, dia_tmpl_path, bn, pre))
-        thread.start()
-        threads.append(thread)
-    # 等待所有线程完成
-    for thread in threads:
-        thread.join()
+        print("warping " + dia_path)
+        board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
+        transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
+        save_path = os.path.join(output_dir, bn)
+        cv2.imwrite(save_path, transformed_image)
+        tmpl_name = pre.split('_')[0]
+        tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
+        with open(tmpl_path, "r", encoding="utf-8") as r:
+            json_obj = json.load(r)
+            json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
+        with open(save_path + ".json", "w", encoding="utf-8") as w:
+            json.dump(json_obj, w)
 
 
-def do_warp_by_thread(output_dir, mtrl_dir, dia_path, dia_tmpl_path, bn, pre):
-    board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
-    transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
-    save_path = os.path.join(output_dir, bn)
-    cv2.imwrite(save_path, transformed_image)
-    tmpl_name = pre.split('_')[0]
-    tmpl_path = os.path.join(mtrl_dir, tmpl_name + ".png.json")
-    with open(tmpl_path, "r", encoding="utf-8") as r:
-        json_obj = json.load(r)
-        json_obj = refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path)
-    with open(save_path + ".json", "w", encoding="utf-8") as w:
-        json.dump(json_obj, w)
 
-
-# lock_obj = threading.Lock()
 if __name__ == "__main__":
     # try_to_warp()
     # arr = np.array([1, 1])

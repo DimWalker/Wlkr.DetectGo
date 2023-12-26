@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import threading
+import time
 import zipfile
 from datetime import datetime
 from io import StringIO
@@ -131,16 +132,13 @@ def try_to_combine():
 def do_combine():
     o, b, w = init_material_list()
     diagram_list = extract_diagram()
-
     output_dir = "../output/diagram_img"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     label = []
     cnt = 0
-    threads = []
+    # threads = []
     for d in diagram_list:
-
         r0 = random.randint(0, len(o) - 1)
         r1 = random.randint(0, len(b) - 1)
         r2 = random.randint(0, len(w) - 1)
@@ -148,36 +146,17 @@ def do_combine():
         current_datetime = datetime.now()
         # 将日期和时间格式化为指定格式
         formatted_datetime = current_datetime.strftime("%Y%m%d%H%M%S%f")
-
         _, pre, _ = GetFileNameSplit(o[r0])
         save_path = os.path.join(output_dir, f"{pre}_{formatted_datetime}.png")
-        # combine_board_image(o[r0], b[r1], w[r2], diagram_path=d, save_path=save_path)
-        # label.append(d + "\t" + save_path + "\n")
-
-        thread = threading.Thread(target=do_combine_by_thread,
-                                  args=(label, d, save_path, o[r0], b[r1], w[r2]))
-        thread.start()
-        threads.append(thread)
-
+        combine_board_image(o[r0], b[r1], w[r2], diagram_path=d, save_path=save_path)
+        label.append(d + "\t" + save_path + "\n")
         cnt += 1
         if cnt == cnt_limit:
             break
-
-    # 等待所有线程完成
-    for thread in threads:
-        thread.join()
     with open(os.path.join(output_dir, "label.txt"), "w", encoding="utf-8") as l:
         l.writelines(label)
 
-
-def do_combine_by_thread(label, d, save_path, op, bp, wp):
-    combine_board_image(op, bp, wp, diagram_path=d, save_path=save_path)
-    with lock_obj:
-        label.append(d + "\t" + save_path + "\n")
-
-
 cnt_limit = 50000
-lock_obj = threading.Lock()
 if __name__ == "__main__":
     # try_to_combine()
     do_combine()

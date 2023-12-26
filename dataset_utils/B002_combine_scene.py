@@ -60,29 +60,30 @@ def combine_scene_image(jpg_path, png_path, train_size=640):
 def offset_json_obj(json_path, offset_x, offset_y, zoom):
     with open(json_path, "r", encoding="utf-8") as f:
         json_obj = json.load(f)
+    for p, pt in enumerate(json_obj["board_region"]):
+        json_obj["board_region"][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
     for r, row in enumerate(json_obj["matrix"]):
         for c, cell in enumerate(row):
             json_obj["matrix"][r][c] = [int(cell[0] * zoom + offset_x), int(cell[1] * zoom + offset_y)]
     for r, row in enumerate(json_obj["pieces_seg"]):
         for c, cell in enumerate(row):
-            for p, point in enumerate(cell):
-                json_obj["pieces_seg"][r][c][p] = [int(point[0] * zoom + offset_x), int(point[1] * zoom + offset_y)]
-    for p, point in enumerate(json_obj["dst_pts"]):
-        json_obj["dst_pts"][p] = [int(point[0] * zoom + offset_x), int(point[1] * zoom + offset_y)]
+            for p, pt in enumerate(cell):
+                json_obj["pieces_seg"][r][c][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
+    for p, pt in enumerate(json_obj["dst_pts"]):
+        json_obj["dst_pts"][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
     for r, row in enumerate(json_obj["regions"]):
         for c, cell in enumerate(row):
-            for p, point in enumerate(cell):
-                json_obj["regions"][r][c][p] = [int(point[0] * zoom + offset_x), int(point[1] * zoom + offset_y)]
+            for p, pt in enumerate(cell):
+                json_obj["regions"][r][c][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
     for c, cell in enumerate(json_obj["corners"]):
-        for p, point in enumerate(cell):
-            json_obj["corners"][c][p] = [int(point[0] * zoom + offset_x), int(point[1] * zoom + offset_y)]
+        for p, pt in enumerate(cell):
+            json_obj["corners"][c][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
     for c, cell in enumerate(json_obj["row_regions"]):
-        for p, point in enumerate(cell):
-            json_obj["row_regions"][c][p] = [int(point[0] * zoom + offset_x), int(point[1] * zoom + offset_y)]
+        for p, pt in enumerate(cell):
+            json_obj["row_regions"][c][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
     for c, cell in enumerate(json_obj["col_regions"]):
-        for p, point in enumerate(cell):
-            json_obj["col_regions"][c][p] = [int(point[0] * zoom + offset_x), int(point[1] * zoom + offset_y)]
-
+        for p, pt in enumerate(cell):
+            json_obj["col_regions"][c][p] = [int(pt[0] * zoom + offset_x), int(pt[1] * zoom + offset_y)]
     return json_obj
 
 

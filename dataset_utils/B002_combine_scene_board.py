@@ -57,8 +57,6 @@ categories_list = [
     #     "supercategory": "piece"
     # },
 ]
-image_info_id = 0
-annotation_info_id = 0
 
 
 def find_category_id(name, raise_ex=True):
@@ -71,6 +69,8 @@ def find_category_id(name, raise_ex=True):
         return None
 
 
+image_info_id = 0
+annotation_info_id = 0
 lock_image_info_id = threading.Lock()
 lock_annotation_info_id = threading.Lock()
 
@@ -115,7 +115,7 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
 
     # 棋盘
     if find_category_id("board", False) is not None:
-        seg, area, roi = cale_ppt_from_region(json_obj["dst_pts"])
+        seg, area, roi = cale_ppt_from_region(json_obj["board_region"])
         annotation_info = {
             "id": get_next_annotation_info_id(),
             "image_id": sub_image_info_id,
@@ -241,46 +241,25 @@ def do_coco_dataset():
     annotations = []
 
     cnt = 0
-    threads = []
     for scene in scene_list:
         if not scene.endswith(".jpg"):
             continue
-        # print("scene: " + scene)
-        # scene_path = os.path.join(scene_dir, scene)
-        # dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
-        # jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
-        # json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_y, zoom)
-        # img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, scene)
-        # cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
-        # images.append(img_info)
-        # annotations += ann_list
-        thread = threading.Thread(target=do_coco_dataset_by_thread,
-                                  args=(images, annotations, output_dir, scene_dir, scene, diagram_list))
-        thread.start()
-        threads.append(thread)
+        print("scene: " + scene)
+        scene_path = os.path.join(scene_dir, scene)
+        dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
+        jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
+        json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_y, zoom)
+        img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, scene)
+        cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
+        images.append(img_info)
+        annotations += ann_list
         cnt += 1
         if cnt == cnt_limit:
             break
-    # 等待所有线程完成
-    for thread in threads:
-        thread.join()
     coco_data["images"] = images
     coco_data["annotations"] = annotations
     with open(os.path.join(output_dir, 'coco_data.json'), 'w') as json_file:
         json.dump(coco_data, json_file, indent=2)
-
-
-def do_coco_dataset_by_thread(images, annotations, output_dir, scene_dir, scene, diagram_list):
-    print("scene: " + scene)
-    scene_path = os.path.join(scene_dir, scene)
-    dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
-    jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
-    json_obj = offset_json_obj(warp_path + ".json", offset_x, offset_y, zoom)
-    img_info, ann_list = coco_image_info(json_obj, jpg_img, dia_path, scene)
-    cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
-    with lock_obj:
-        images.append(img_info)
-        annotations += ann_list
 
 
 def try_to():
@@ -290,38 +269,20 @@ def try_to():
         os.makedirs(output_dir)
     with open(os.path.join(dataset_dir, "coco_data.json")) as f:
         coco_data = json.load(f)
-    threads = []
     for image in coco_data["images"]:
-        # img_path = os.path.join(dataset_dir, image["file_name"])
-        # img = cv2.imread(img_path)
-        # for ann in coco_data["annotations"]:
-        #     if image["id"] == ann["image_id"]:
-        #         draw_region(img, ann["segmentation"])
-        #         draw_region(img, ann["bbox"])
-        # cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
-        thread = threading.Thread(target=do_draw_by_thread,
-                                  args=(image, coco_data, dataset_dir, output_dir))
-        thread.start()
-        threads.append(thread)
-    # 等待所有线程完成
-    for thread in threads:
-        thread.join()
-
-
-def do_draw_by_thread(image, coco_data, dataset_dir, output_dir):
-    img_path = os.path.join(dataset_dir, image["file_name"])
-    img = cv2.imread(img_path)
-    for ann in coco_data["annotations"]:
-        if image["id"] == ann["image_id"]:
-            draw_region(img, ann["segmentation"])
-            draw_region(img, ann["bbox"])
-    cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
+        img_path = os.path.join(dataset_dir, image["file_name"])
+        img = cv2.imread(img_path)
+        for ann in coco_data["annotations"]:
+            if image["id"] == ann["image_id"]:
+                draw_region(img, ann["segmentation"])
+                draw_region(img, ann["bbox"])
+        cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
 
 
 dataset_name = "go_board_dataset_v3"
 dataset_type = "train"
 cnt_limit = 99999999
-lock_obj = threading.Lock()
+# lock_obj = threading.Lock()
 if __name__ == "__main__":
     do_coco_dataset()
     try_to()
