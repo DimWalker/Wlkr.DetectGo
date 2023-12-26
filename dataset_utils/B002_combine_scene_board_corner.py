@@ -30,27 +30,44 @@ categories_list = [
         "name": "corner",
         "supercategory": "board"
     },
-    {
-        "id": 3,
-        "name": "row",
-        "supercategory": "board"
-    },
-    {
-        "id": 4,
-        "name": "col",
-        "supercategory": "board"
-    }
-
+    # {
+    #     "id": 3,
+    #     "name": "row",
+    #     "supercategory": "board"
+    # },
+    # {
+    #     "id": 4,
+    #     "name": "col",
+    #     "supercategory": "board"
+    # },
+    # {
+    #     "id": 5,
+    #     "name": "black",
+    #     "supercategory": "piece"
+    # },
+    # {
+    #     "id": 6,
+    #     "name": "white",
+    #     "supercategory": "piece"
+    # },
+    # {
+    #     "id": 7,
+    #     "name": "empty",
+    #     "supercategory": "piece"
+    # },
 ]
 image_info_id = 0
 annotation_info_id = 0
 
 
-def find_category_id(name):
+def find_category_id(name, raise_ex=True):
     res = [x for x in categories_list if x["name"] == name]
     if len(res) == 1:
         return res[0]["id"]
-    raise Exception("category_id not found.")
+    if raise_ex:
+        raise Exception("category_id not found.")
+    else:
+        return None
 
 
 def coco_image_info(json_obj, jpg_img, dia_path, scene):
@@ -78,27 +95,79 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
     ann_list = []
 
     # 棋盘
-    annotation_info_id += 1
-    seg, area, roi = cale_ppt_from_region(json_obj["dst_pts"])
-    annotation_info = {
-        "id": annotation_info_id,
-        "image_id": image_info_id,
-        "category_id": find_category_id("board"),
-        "segmentation": [seg],
-        "area": area,  # 替换为实际区域面积
-        "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
-        "iscrowd": 0
-    }
-    ann_list.append(annotation_info)
-    diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
+    if find_category_id("board",False) is not None:
+        annotation_info_id += 1
+        seg, area, roi = cale_ppt_from_region(json_obj["dst_pts"])
+        annotation_info = {
+            "id": annotation_info_id,
+            "image_id": image_info_id,
+            "category_id": find_category_id("board"),
+            "segmentation": [seg],
+            "area": area,  # 替换为实际区域面积
+            "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+            "iscrowd": 0
+        }
+        ann_list.append(annotation_info)
 
     # 角
-    for r, row in enumerate(json_obj["regions"]):
-        for c, cell in enumerate(row):
-            if (r == 0 and c == 0) or (r == 0 and c == 18) or (r == 18 and c == 0) or (r == 18 and c == 18):
+    if find_category_id("corner", False) is not None:
+        for corner in json_obj["corners"]:
+            annotation_info_id += 1
+            seg, area, roi = cale_ppt_from_region(corner)
+            cat_id = find_category_id("corner")
+            # 定义注释信息
+            annotation_info = {
+                "id": annotation_info_id,
+                "image_id": image_info_id,
+                "category_id": cat_id,  # 替换为实际类别ID
+                "segmentation": [seg],
+                "area": area,  # 替换为实际区域面积
+                "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+                "iscrowd": 0
+            }
+            ann_list.append(annotation_info)
+    # 行
+    if find_category_id("row", False) is not None:
+        for row_region in json_obj["row_regions"]:
+            annotation_info_id += 1
+            seg, area, roi = cale_ppt_from_region(row_region)
+            cat_id = find_category_id("row")
+            # 定义注释信息
+            annotation_info = {
+                "id": annotation_info_id,
+                "image_id": image_info_id,
+                "category_id": cat_id,  # 替换为实际类别ID
+                "segmentation": [seg],
+                "area": area,  # 替换为实际区域面积
+                "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+                "iscrowd": 0
+            }
+            ann_list.append(annotation_info)
+    # 列
+    if find_category_id("col", False) is not None:
+        for col_region in json_obj["col_regions"]:
+            annotation_info_id += 1
+            seg, area, roi = cale_ppt_from_region(col_region)
+            cat_id = find_category_id("col")
+            # 定义注释信息
+            annotation_info = {
+                "id": annotation_info_id,
+                "image_id": image_info_id,
+                "category_id": cat_id,  # 替换为实际类别ID
+                "segmentation": [seg],
+                "area": area,  # 替换为实际区域面积
+                "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+                "iscrowd": 0
+            }
+            ann_list.append(annotation_info)
+    # 棋子，圆形
+    if find_category_id("black", False) is not None:
+        diagram = np.genfromtxt(dia_path, delimiter=' ', dtype=np.int32, encoding="utf-8")
+        for r, row in enumerate(json_obj["pieces_seg"]):
+            for c, cell in enumerate(row):
                 annotation_info_id += 1
                 seg, area, roi = cale_ppt_from_region(cell)
-                cat_id = find_category_id("corner")
+                cat_id = find_category_id("black" if diagram[r][c] == 1 else ("white" if diagram[r][c] == 2 else "empty"))
                 # 定义注释信息
                 annotation_info = {
                     "id": annotation_info_id,
@@ -110,50 +179,6 @@ def coco_image_info(json_obj, jpg_img, dia_path, scene):
                     "iscrowd": 0
                 }
                 ann_list.append(annotation_info)
-
-    # 行
-    for r, row in enumerate(json_obj["regions"]):
-        row_region = [[row[0][0][0], row[0][0][1]],
-                      [row[18][1][0], row[18][1][1]],
-                      [row[18][2][0], row[18][2][1]],
-                      [row[0][3][0], row[0][3][1]]]
-        annotation_info_id += 1
-        seg, area, roi = cale_ppt_from_region(row_region)
-        cat_id = find_category_id("row")
-        # 定义注释信息
-        annotation_info = {
-            "id": annotation_info_id,
-            "image_id": image_info_id,
-            "category_id": cat_id,  # 替换为实际类别ID
-            "segmentation": [seg],
-            "area": area,  # 替换为实际区域面积
-            "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
-            "iscrowd": 0
-        }
-        ann_list.append(annotation_info)
-
-    for c in range(19):
-        col_region = [
-            [json_obj["regions"][0][c][0][0], json_obj["regions"][0][c][0][1]],
-            [json_obj["regions"][0][c][1][0], json_obj["regions"][0][c][1][1]],
-            [json_obj["regions"][18][c][2][0], json_obj["regions"][18][c][2][1]],
-            [json_obj["regions"][18][c][3][0], json_obj["regions"][18][c][3][1]],
-        ]
-        annotation_info_id += 1
-        seg, area, roi = cale_ppt_from_region(col_region)
-        cat_id = find_category_id("col")
-        # 定义注释信息
-        annotation_info = {
-            "id": annotation_info_id,
-            "image_id": image_info_id,
-            "category_id": cat_id,  # 替换为实际类别ID
-            "segmentation": [seg],
-            "area": area,  # 替换为实际区域面积
-            "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
-            "iscrowd": 0
-        }
-        ann_list.append(annotation_info)
-
     return image_info, ann_list
 
 

@@ -63,6 +63,7 @@ def refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path):
     # 这段会改变json_obj的原来的的值
     json_obj["dst_pts"] = dst_pts.astype(np.int32).tolist()
     regions = []
+    cornets = []
     for r, row in enumerate(json_obj["matrix"]):
         line = []
         for c, pnt in enumerate(row):
@@ -74,38 +75,66 @@ def refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path):
             # 棋盘四个角补正
             # 变更为向内扩展1格，增加特征
             length = int(json_obj["avg_line_len"] / 2)
+            # 角
             if r == 0 and c == 0:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y - length)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y + length * 4)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length * 4)]
+                cornets.append([lt, rt, rb, lb])
             elif r == 0 and c == 18:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y - length)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length * 4)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y + length * 4)]
+                cornets.append([lt, rt, rb, lb])
             elif r == 18 and c == 0:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length * 4)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y - length * 4)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + length * 4, y + length)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length)]
+                cornets.append([lt, rt, rb, lb])
             elif r == 18 and c == 18:
                 lt = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y - length * 4)]
                 rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length * 4)]
                 rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length)]
                 lb = [int(f * zoom) for f in calc_warp_point(M, x - length * 4, y + length)]
-            else:
-                # 棋子region
-                lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length)]
-                rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length)]
-                rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length)]
-                lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length)]
+                cornets.append([lt, rt, rb, lb])
+            # 棋子region
+            lt = [int(f * zoom) for f in calc_warp_point(M, x - length, y - length)]
+            rt = [int(f * zoom) for f in calc_warp_point(M, x + length, y - length)]
+            rb = [int(f * zoom) for f in calc_warp_point(M, x + length, y + length)]
+            lb = [int(f * zoom) for f in calc_warp_point(M, x - length, y + length)]
             line.append([lt, rt, rb, lb])
             # 4个角区域
         regions.append(line)
     json_obj["regions"] = regions
+    json_obj["corners"] = cornets
     json_obj["avg_line_len"] = int(json_obj["avg_line_len"] * zoom)
+    calc_row_col(json_obj)
     return json_obj
+
+
+def calc_row_col(json_obj):
+    # 行
+    rows = []
+    for r, row in enumerate(json_obj["regions"]):
+        row_region = [[row[0][0][0], row[0][0][1]],
+                      [row[18][1][0], row[18][1][1]],
+                      [row[18][2][0], row[18][2][1]],
+                      [row[0][3][0], row[0][3][1]]]
+        rows.append(row_region)
+    cols = []
+    for c in range(19):
+        col_region = [
+            [json_obj["regions"][0][c][0][0], json_obj["regions"][0][c][0][1]],
+            [json_obj["regions"][0][c][1][0], json_obj["regions"][0][c][1][1]],
+            [json_obj["regions"][18][c][2][0], json_obj["regions"][18][c][2][1]],
+            [json_obj["regions"][18][c][3][0], json_obj["regions"][18][c][3][1]],
+        ]
+        cols.append(col_region)
+    json_obj["row_regions"] = rows
+    json_obj["col_regions"] = cols
 
 
 def calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path):

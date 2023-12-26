@@ -72,6 +72,7 @@ def board_warp_back(image_path, output_dir):
         cv2.imwrite(os.path.join(output_dir, pre + "_min_max" + ext), crop_img)
 
         # 计算rec任务，棋子高32像素，32*19=608
+        # 24*19=456，为什么这个像素warp back后的东西很奇怪？
         wb_len=608
         src_pts = [[0, 0], [wb_len, 0], [wb_len, wb_len], [0, wb_len]]
         dst_pts = [
