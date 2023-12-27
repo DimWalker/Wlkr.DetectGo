@@ -66,7 +66,10 @@ def find_row_segmentation(coco_data, sc_wp_list, img_name, row_cate_id, M):
 
 
 def warp_back():
-    output_dir = "../output/diagram_det_dataset/ppocrlabel_dataset"
+    pre_dir_name = "ppocrlabel_dataset"
+    output_dir = "../output/diagram_det_dataset/" + pre_dir_name
+    abs_dir = os.path.dirname(os.path.dirname(__file__))
+    abs_dir = os.path.join(abs_dir, "output", "diagram_det_dataset", pre_dir_name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -76,27 +79,32 @@ def warp_back():
     row_cate_id = find_category_id(coco_data, "row")
     res_list = []
     stat_list = []
+    cnt = 0
     for img_path in input_list:
         if not img_path.endswith(".jpg"):
             continue
         bn, _, _ = GetFileNameSplit(img_path)
         img_path = os.path.join(raw_dir, img_path)
-        M, save_name = board_warp_back(img_path, output_dir)
+        M, save_name = board_warp_back(img_path, output_dir, True)
         if M is None:
             continue
         line = find_row_segmentation(coco_data, sc_wp_list, bn, row_cate_id, M)
         if line is not None:
-            res_list.append(f"{save_name}\t{line}\n")
-            stat_list.append(f"{save_name}\t1\n")
+            res_list.append(f"{pre_dir_name}/{save_name}\t{line}\n")
+            stat_list.append(f"{abs_dir}\\{save_name}\t1\n")
         else:
             print("line is None.")
+
+        cnt += 1
+        if cnt > cnt_limit:
+            break
     with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
         f.writelines(res_list)
     with open(os.path.join(output_dir, "fileState.txt"), "w", encoding="utf-8") as f:
         f.writelines(stat_list)
 
 
-def board_warp_back(image_path, output_dir):
+def board_warp_back(image_path, output_dir, ship_save=None):
     print("warp_back " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model(image_path)
@@ -140,12 +148,13 @@ def board_warp_back(image_path, output_dir):
             calc_anchor_point(src_pts[3], corners)
         ]
         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
-        new_image = img.copy()
-        warped_image = cv2.warpPerspective(new_image, M, (wb_len, wb_len), borderMode=cv2.BORDER_CONSTANT,
-                                           borderValue=(255, 255, 255, 0))
-        # 保存
         save_name = pre + "_wb" + ext
-        cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
+        if ship_save:
+            new_image = img.copy()
+            warped_image = cv2.warpPerspective(new_image, M, (wb_len, wb_len), borderMode=cv2.BORDER_CONSTANT,
+                                               borderValue=(255, 255, 255, 0))
+            # 保存
+            cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
         return M, save_name
     else:
         print("corners < 4")
@@ -179,8 +188,37 @@ def calc_anchor_point(src_pt, corners):
     return dst_pt
 
 
+def fix_label():
+    with open("../output/diagram_det_dataset/ppocrlabel_dataset/Label.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    for l, line in enumerate(lines):
+        lines[l] = "ppocrlabel_dataset/" + line
+    with open("../output/diagram_det_dataset/ppocrlabel_dataset/Label.txt", "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    for l, line in enumerate(lines):
+        lines[
+            l] = r"D:\WorkArea\Private_Project\Wlkr.DetectGo\output\diagram_det_dataset\ppocrlabel_dataset" + "\\" + line
+    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+
+def fix_label_2():
+    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    for l, line in enumerate(lines):
+        lines[l] = line.replace("/", "\\")
+    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+
+cnt_limit = 10000000
 raw_dir = "../output/diagram_det_dataset/train"
 if __name__ == "__main__":
-    weights_path = r'..\runs\train\exp\weights\best.pt'
-    model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
-    warp_back()
+    # weights_path = r'..\runs\train\exp\weights\best.pt'
+    # model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
+    # warp_back()
+    # fix_label()
+    fix_label_2()
