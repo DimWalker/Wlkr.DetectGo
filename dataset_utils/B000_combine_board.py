@@ -5,10 +5,12 @@ import zipfile
 from datetime import datetime
 from io import StringIO
 
+import cv2
 import numpy as np
 from PIL import Image
 
 from Wlkr.Common.FileUtils import GetFileNameSplit
+from dataset_utils.B002_combine_scene import draw_region
 
 mtrl_dir = r"../assets/material"
 
@@ -126,6 +128,42 @@ def try_to_combine():
             combine_board_image(o[i], b[r1], w[r2])
 
 
+# def draw_region(image, region):
+#     # 定义四个点的坐标
+#     points = np.array(region, np.int32)
+#     # 顶点坐标需要reshape成OpenCV所需的格式
+#     points = points.reshape((-1, 1, 2))
+#     # 画四边形
+#     cv2.polylines(image, [points], isClosed=True,
+#                   color=(
+#                       random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
+#                   thickness=1)
+
+
+def draw_board_region():
+    output_dir = "../output/board_draw"
+    mtrl_path = "../assets/material"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    dia_dir = "../output/diagram_img"
+    files = os.listdir(dia_dir)
+
+    ok_list = []
+    for file in files:
+        if not file.endswith(".png"):
+            continue
+
+        tmpl_name = file[:4] + ".png.json"
+        if tmpl_name in ok_list:
+            continue
+        with open(os.path.join(mtrl_path, tmpl_name), "r", encoding="utf-8") as f:
+            json_obj = json.load(f)
+        img = cv2.imread(os.path.join(dia_dir, file))
+        draw_region(img, json_obj["board_region"])
+        cv2.imwrite(os.path.join(output_dir, file), img)
+        ok_list.append(tmpl_name)
+
+
 def do_combine():
     o, b, w = init_material_list()
     diagram_list = extract_diagram()
@@ -153,7 +191,9 @@ def do_combine():
     with open(os.path.join(output_dir, "label.txt"), "w", encoding="utf-8") as l:
         l.writelines(label)
 
+
 cnt_limit = 50000
 if __name__ == "__main__":
     # try_to_combine()
     do_combine()
+    # draw_board_region()

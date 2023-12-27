@@ -35,7 +35,8 @@ def save_middle_mat(img, name):
 
 
 def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
-                          , crop_px=None, brightness=None):
+                          , crop_px=None, brightness=None
+                          , bg_offset=None):
     print(image_path)
     # 读取图像
     img = cv2.imread(image_path)
@@ -187,6 +188,9 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
     for row in matrix:
         print('1,' * len(row))
     # 保存棋盘数据
+    if bg_offset is not None:
+        min_x, max_x, min_y, max_y = bg_offset[0], width - bg_offset[2], \
+                                     bg_offset[1], height - bg_offset[3]
     json_path = image_path + ".json"
     json_obj = {
         "board_region": [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]],
@@ -210,20 +214,18 @@ def try_to_find():
 
     img_path = r"../assets/material/O003.png"
     reset_dir()
-    find_go_board_squares(img_path, bin_threshold=96, crop_px=5)
+    find_go_board_squares(img_path, bin_threshold=96,
+                          crop_px=5, bg_offset=[0, 0, 0, 0])
 
     # 这张图黑白是反的，还需要调整亮度
     img_path = r"../assets/material/O004.png"
     reset_dir()
-    find_go_board_squares(img_path, bin_threshold=-128, crop_px=40, brightness=-50)
-
-    # img_path = r"../assets/material/O005.png"
-    # reset_dir()
-    # find_go_board_squares(img_path, bin_threshold=96)
+    find_go_board_squares(img_path, bin_threshold=-128, brightness=-50,
+                          crop_px=40, bg_offset=[0, 0, 0, 0])
 
     img_path = r"../assets/material/O005.png"
     reset_dir()
-    find_go_board_squares(img_path, crop_px=60)
+    find_go_board_squares(img_path, crop_px=60, bg_offset=[50, 50, 50, 50])
 
     img_path = r"../assets/material/O006.png"
     reset_dir()
@@ -231,45 +233,50 @@ def try_to_find():
 
     img_path = r"../assets/material/O007.png"
     reset_dir()
-    find_go_board_squares(img_path,bin_threshold=96)
+    find_go_board_squares(img_path, bin_threshold=96)
 
     img_path = r"../assets/material/O008.png"
     reset_dir()
-    find_go_board_squares(img_path , bin_threshold=96, crop_px=30)
+    find_go_board_squares(img_path, bin_threshold=96,
+                          crop_px=30, bg_offset=[0, 0, 0, 0])
 
     img_path = r"../assets/material/O009.png"
     reset_dir()
-    find_go_board_squares(img_path, crop_px=30)
+    find_go_board_squares(img_path,
+                          crop_px=30, bg_offset=[7, 7, 10, 10])
 
     img_path = r"../assets/material/O010.png"
     reset_dir()
-    find_go_board_squares(img_path, crop_px=50)
+    find_go_board_squares(img_path,
+                          crop_px=50, bg_offset=[26, 22, 29, 35])
 
     img_path = r"../assets/material/O011.png"
     reset_dir()
-    find_go_board_squares(img_path, bin_threshold=96, crop_px=[60, 60, 70, 70])
+    find_go_board_squares(img_path, bin_threshold=96,
+                          crop_px=[60, 60, 70, 70], bg_offset=[41, 40, 64, 64])
 
     img_path = r"../assets/material/O012.png"
     reset_dir()
-    find_go_board_squares(img_path, bin_threshold=96, crop_px=[70, 50, 70, 70])
+    find_go_board_squares(img_path, bin_threshold=96,
+                          crop_px=[70, 50, 70, 70], bg_offset=[75, 36, 92, 87])
 
     img_path = r"../assets/material/O013.png"
     reset_dir()
-    find_go_board_squares(img_path ,bin_threshold=-128, crop_px=40, brightness=-50)
+    find_go_board_squares(img_path, bin_threshold=-128, brightness=-50,
+                          crop_px=40, bg_offset=[19, 0, 14, 0])
 
     img_path = r"../assets/material/O014.png"
     reset_dir()
-    find_go_board_squares(img_path,bin_threshold=180, crop_px=60)
+    find_go_board_squares(img_path, bin_threshold=180,
+                          crop_px=60, bg_offset=[38, 44, 48, 42])
 
     img_path = r"../assets/material/O015.png"
     reset_dir()
-    find_go_board_squares(img_path)
+    find_go_board_squares(img_path, bg_offset=[11, 4, 16, 24])
 
     img_path = r"../assets/material/O016.png"
     reset_dir()
-    find_go_board_squares(img_path)
-
-
+    find_go_board_squares(img_path, bg_offset=[58, 60, 67, 65])
 
     # 这张得想新算法     XXXXO013.png
 

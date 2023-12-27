@@ -8,6 +8,7 @@ import numpy as np
 
 from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils.B000_combine_board import load_diagram
+from dataset_utils.B002_combine_scene import draw_region
 
 tmp_disable_factor = 37
 factor_cnt = 0
@@ -72,6 +73,8 @@ def refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path):
     # 这段会改变json_obj的原来的的值
     for p, pt in enumerate(json_obj["board_region"]):
         x, y = pt
+        x += factor
+        y += factor
         json_obj["board_region"][p] = [int(f * zoom) for f in calc_warp_point(M, x, y)]
     for r, row in enumerate(json_obj["matrix"]):
         line = []
@@ -163,6 +166,7 @@ def calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path):
 
     length = int(json_obj["avg_line_len"] / 2)
     pieces_seg = []
+
     for r, row in enumerate(json_obj["matrix"]):
         line = []
         for c, pnt in enumerate(row):
@@ -187,6 +191,7 @@ def calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path):
             line.append(warp_seq)
         pieces_seg.append(line)
     json_obj["pieces_seg"] = pieces_seg
+    json_obj["diagram"] = diagram.tolist()
     return json_obj
 
 
@@ -202,7 +207,7 @@ def calc_warp_point(M, ori_x, ori_y):
 
 def try_to_warp():
     # 读取围棋棋盘图片
-    board_image = cv2.imread("../output/diagram_img/O001_20231219215605718850.png",
+    board_image = cv2.imread("../output/diagram_img/O001_20231227100023624787.png",
                              cv2.IMREAD_UNCHANGED)
     dia_tmpl_path = "../output/diagram/aa_my_label/003.txt"
     # 生成透视变换后的图像
@@ -215,26 +220,48 @@ def try_to_warp():
     with open("../output/warp.png.json", "w", encoding="utf-8") as w:
         json.dump(json_obj, w)
 
-    for row in json_obj["regions"]:
-        for region in row:
-            draw_region(transformed_image, region)
-    for row in json_obj["pieces_seg"]:
-        for region in row:
-            draw_region(transformed_image, region)
+    # for row in json_obj["regions"]:
+    #     for region in row:
+    #         draw_region(transformed_image, region)
+    # for row in json_obj["pieces_seg"]:
+    #     for region in row:
+    #         draw_region(transformed_image, region)
+    draw_region(transformed_image, json_obj["board_region"])
 
     cv2.imwrite("../output/draw_region.png", transformed_image)
 
 
-def draw_region(image, region):
-    # 定义四个点的坐标
-    points = np.array(region, np.int32)
-    # 顶点坐标需要reshape成OpenCV所需的格式
-    points = points.reshape((-1, 1, 2))
-    # 画四边形
-    cv2.polylines(image, [points], isClosed=True,
-                  color=(
-                      random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
-                  thickness=1)
+def draw_all_warp():
+    output_dir = "../output/warp_draw"
+    warp_dir = "../output/diagram_warp"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    lines = os.listdir(warp_dir)
+
+    for line in lines:
+        if not line.endswith(".png"):
+            continue
+        warp_path = os.path.join(warp_dir, line)
+        bn, _, _ = GetFileNameSplit(warp_path)
+        json_path = warp_path + ".json"
+        with open(json_path, "r", encoding="utf-8") as f:
+            json_obj = json.load(f)
+
+        img = cv2.imread(warp_path)
+        draw_region(img, json_obj["board_region"])
+        cv2.imwrite(os.path.join(output_dir, bn), img)
+
+
+# def draw_region(image, region):
+#     # 定义四个点的坐标
+#     points = np.array(region, np.int32)
+#     # 顶点坐标需要reshape成OpenCV所需的格式
+#     points = points.reshape((-1, 1, 2))
+#     # 画四边形
+#     cv2.polylines(image, [points], isClosed=True,
+#                   color=(
+#                       random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
+#                   thickness=1)
 
 
 def do_warp():
@@ -247,6 +274,7 @@ def do_warp():
     with open(label_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
     # diagrams = os.listdir(diagram_dir)
+    cnt = 0
     for line in lines:
         dia_tmpl_path, dia_path = line.rstrip().split('\t')
 
@@ -266,10 +294,15 @@ def do_warp():
         with open(save_path + ".json", "w", encoding="utf-8") as w:
             json.dump(json_obj, w)
 
+        cnt += 1
+        if cnt > cnt_limit:
+            break
 
 
+cnt_limit = 10000000
 if __name__ == "__main__":
     # try_to_warp()
     # arr = np.array([1, 1])
     # print(arr * 2)
     do_warp()
+    # draw_all_warp()

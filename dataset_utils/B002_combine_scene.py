@@ -95,7 +95,14 @@ def draw_region(image, pts):
         cv2.polylines(image, [points], isClosed=True,
                       color=(
                           random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
-                      thickness=1)
+                      thickness=2)
+    elif len(pts) == 4 and isinstance(pts[0], list) == 2:
+        points = np.array(pts, np.int32).reshape((4, 2))
+        # 画四边形
+        cv2.polylines(image, [points], isClosed=True,
+                      color=(
+                          random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
+                      thickness=2)
     else:
         # 定义矩形的左上角和右下角坐标
         x1, y1 = pts[0], pts[1]
@@ -103,4 +110,4 @@ def draw_region(image, pts):
         # 定义矩形的颜色（BGR 格式）
         color = (0, 255, 0)  # 这里使用绿色
         # 绘制矩形
-        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness=1)
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness=2)

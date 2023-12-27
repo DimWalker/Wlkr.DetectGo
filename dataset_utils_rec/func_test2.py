@@ -108,12 +108,12 @@ def show_all():
 
 if __name__ == "__main__":
     # OK
-    image_path = r'..\output\go_board_dataset_v3\eval\0bd64ecc6579b78313d2e90226550051985674d7.jpg'
+    #image_path = r'..\output\go_board_dataset_v3\eval\0bd64ecc6579b78313d2e90226550051985674d7.jpg'
     # 直线可以，像素太差
-    image_path = r'..\output\go_board_dataset_v3\eval\0b3dc72c2003eda0e4fa0b9994a583bcacea95db.jpg'
+    #image_path = r'..\output\go_board_dataset_v3\eval\0b3dc72c2003eda0e4fa0b9994a583bcacea95db.jpg'
     # OK
-    image_path = r'..\output\go_board_dataset_v3\eval\0ccfe16896bed86140adb065c119090498eaebcb.jpg'
-    weights_path = r'..\runs\train\exp4\weights\best.pt'
+    #image_path = r'..\output\go_board_dataset_v3\eval\0ccfe16896bed86140adb065c119090498eaebcb.jpg'
+    weights_path = r'..\runs\train\exp\weights\best.pt'
     model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
     #board_warp_back(image_path)
 

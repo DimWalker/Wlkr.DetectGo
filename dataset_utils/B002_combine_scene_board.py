@@ -31,31 +31,31 @@ categories_list = [
         "name": "corner",
         "supercategory": "board"
     },
-    # {
-    #     "id": 3,
-    #     "name": "row",
-    #     "supercategory": "board"
-    # },
-    # {
-    #     "id": 4,
-    #     "name": "col",
-    #     "supercategory": "board"
-    # },
-    # {
-    #     "id": 5,
-    #     "name": "black",
-    #     "supercategory": "piece"
-    # },
-    # {
-    #     "id": 6,
-    #     "name": "white",
-    #     "supercategory": "piece"
-    # },
-    # {
-    #     "id": 7,
-    #     "name": "empty",
-    #     "supercategory": "piece"
-    # },
+    {
+        "id": 3,
+        "name": "row",
+        "supercategory": "board"
+    },
+    {
+        "id": 4,
+        "name": "col",
+        "supercategory": "board"
+    },
+    {
+        "id": 5,
+        "name": "black",
+        "supercategory": "piece"
+    },
+    {
+        "id": 6,
+        "name": "white",
+        "supercategory": "piece"
+    },
+    {
+        "id": 7,
+        "name": "empty",
+        "supercategory": "piece"
+    },
 ]
 
 
@@ -241,6 +241,7 @@ def do_coco_dataset():
     annotations = []
 
     cnt = 0
+    scene_label = []
     for scene in scene_list:
         if not scene.endswith(".jpg"):
             continue
@@ -253,13 +254,16 @@ def do_coco_dataset():
         cv2.imwrite(os.path.join(output_dir, scene), jpg_img)
         images.append(img_info)
         annotations += ann_list
+        scene_label.append(f"{scene_path}\t{warp_path}\n")
         cnt += 1
         if cnt == cnt_limit:
             break
     coco_data["images"] = images
     coco_data["annotations"] = annotations
-    with open(os.path.join(output_dir, 'coco_data.json'), 'w') as json_file:
+    with open(os.path.join(output_dir, 'coco_data.json'), 'w', encoding="utf-8") as json_file:
         json.dump(coco_data, json_file, indent=2)
+    with open(os.path.join(output_dir, "label.txt"), 'w', encoding="utf-8") as sc_lb:
+        sc_lb.writelines(scene_label)
 
 
 def try_to():
@@ -279,10 +283,13 @@ def try_to():
         cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
 
 
-dataset_name = "go_board_dataset_v3"
-dataset_type = "eval"
+# 这个归档了，当它完美没bug了
+# dataset_name = "go_board_dataset_v3"
+
+dataset_name = "diagram_det_dataset"
+dataset_type = "train"
 cnt_limit = 99999999
 # lock_obj = threading.Lock()
 if __name__ == "__main__":
     do_coco_dataset()
-    try_to()
+    # try_to()
