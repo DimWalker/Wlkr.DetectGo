@@ -19,7 +19,7 @@ def load_diagram(diagram_path):
     with open(diagram_path, "r", encoding="utf-8") as f:
         content = f.read()
     content = StringIO(content.replace("[", "").replace("]", ""))
-    diagram = np.genfromtxt(content, delimiter=' ', dtype=None, encoding="utf-8")
+    diagram = np.genfromtxt(content, delimiter=' ', dtype=int, encoding="utf-8")
     return diagram
 
 

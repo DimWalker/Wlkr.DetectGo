@@ -67,9 +67,9 @@ def find_row_segmentation(coco_data, sc_wp_list, img_name, row_cate_id, M):
 
 def warp_back():
     pre_dir_name = "ppocrlabel_dataset"
-    output_dir = "../output/diagram_det_dataset/" + pre_dir_name
+    output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
     abs_dir = os.path.dirname(os.path.dirname(__file__))
-    abs_dir = os.path.join(abs_dir, "output", "diagram_det_dataset", pre_dir_name)
+    abs_dir = os.path.join(abs_dir, "output", "diagram_det_rec_dataset", pre_dir_name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -189,36 +189,63 @@ def calc_anchor_point(src_pt, corners):
 
 
 def fix_label():
-    with open("../output/diagram_det_dataset/ppocrlabel_dataset/Label.txt", "r", encoding="utf-8") as f:
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     for l, line in enumerate(lines):
         lines[l] = "ppocrlabel_dataset/" + line
-    with open("../output/diagram_det_dataset/ppocrlabel_dataset/Label.txt", "w", encoding="utf-8") as f:
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "w", encoding="utf-8") as f:
         f.writelines(lines)
 
-    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     for l, line in enumerate(lines):
         lines[
-            l] = r"D:\WorkArea\Private_Project\Wlkr.DetectGo\output\diagram_det_dataset\ppocrlabel_dataset" + "\\" + line
-    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
+            l] = r"D:\WorkArea\Private_Project\Wlkr.DetectGo\output\diagram_det_rec_dataset\ppocrlabel_dataset" + "\\" + line
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
         f.writelines(lines)
 
 
 def fix_label_2():
-    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     for l, line in enumerate(lines):
         lines[l] = line.replace("/", "\\")
-    with open("../output/diagram_det_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+
+def fix_label_3():
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    for l, line in enumerate(lines):
+        fn, json_str = line.split("\t")
+        json_obj = json.loads(json_str)
+        for o in json_obj:
+            if "." in o["transcription"]:
+                print(o["transcription"])
+                o["transcription"] = o["transcription"].replace("1.0", "").replace("2.0", "").replace("0.0", "")
+        lines[l] = fn + "\t" + json.dumps(json_obj) + "\n"
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/rec_gt.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    for l, line in enumerate(lines):
+        fn, transcription = line.split("\t")
+        if "." in transcription:
+            print(transcription)
+            transcription = transcription.replace("1.0", "").replace("2.0", "").replace("0.0", "")
+        lines[l] = fn + "\t" + transcription
+    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/rec_gt.txt", "w", encoding="utf-8") as f:
         f.writelines(lines)
 
 
 cnt_limit = 10000000
-raw_dir = "../output/diagram_det_dataset/train"
+raw_dir = "../output/diagram_det_rec_dataset/train"
 if __name__ == "__main__":
-    # weights_path = r'..\runs\train\exp\weights\best.pt'
-    # model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
-    # warp_back()
+    weights_path = r'..\runs\train\exp\weights\best.pt'
+    model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
+    warp_back()
     # fix_label()
-    fix_label_2()
+    # fix_label_2()
+    # fix_label_3()

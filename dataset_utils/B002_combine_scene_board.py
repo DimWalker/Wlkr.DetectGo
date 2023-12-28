@@ -286,8 +286,8 @@ def try_to():
 # 这个归档了，当它完美没bug了
 # dataset_name = "go_board_dataset_v3"
 
-dataset_name = "diagram_det_dataset"
-dataset_type = "train"
+dataset_name = "diagram_det_rec_dataset"
+dataset_type = "eval"
 cnt_limit = 99999999
 # lock_obj = threading.Lock()
 if __name__ == "__main__":
