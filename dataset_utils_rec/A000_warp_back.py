@@ -1,5 +1,6 @@
 import json
 import os.path
+import shutil
 
 import cv2
 import numpy as np
@@ -65,10 +66,23 @@ def find_row_segmentation(coco_data, sc_wp_list, img_name, row_cate_id, M):
     return json.dumps(trs, ensure_ascii=False)
 
 
+def find_row_segmentation_straight(img_path):
+    with open(img_path + ".json", "r", encoding="utf-8") as f:
+        json_obj = json.load(f)
+    trs = []
+    for a, ann in enumerate(json_obj["row_regions"]):
+        text_region = {"transcription": ''.join(map(str, json_obj["diagram"][a])),
+                       "points": ann,
+                       "difficult": False,
+                       "key_cls": "None"}
+        trs.append(text_region)
+    return json.dumps(trs, ensure_ascii=False)
+
+
 def warp_back():
-    pre_dir_name = "ppocrlabel_dataset"
     output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
     abs_dir = os.path.dirname(os.path.dirname(__file__))
+    abs_dir = abs_dir.replace("/", "\\")
     abs_dir = os.path.join(abs_dir, "output", "diagram_det_rec_dataset", pre_dir_name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -92,6 +106,40 @@ def warp_back():
         if line is not None:
             res_list.append(f"{pre_dir_name}/{save_name}\t{line}\n")
             stat_list.append(f"{abs_dir}\\{save_name}\t1\n")
+        else:
+            print("line is None.")
+
+        cnt += 1
+        if cnt > cnt_limit:
+            break
+    with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
+        f.writelines(res_list)
+    with open(os.path.join(output_dir, "fileState.txt"), "w", encoding="utf-8") as f:
+        f.writelines(stat_list)
+
+
+def warp_back_straight():
+    output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
+    abs_dir = os.path.dirname(os.path.dirname(__file__))
+    abs_dir = abs_dir.replace("/", "\\")
+    abs_dir = os.path.join(abs_dir, "output", "diagram_det_rec_dataset", pre_dir_name)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    input_list = os.listdir(raw_dir)
+    res_list = []
+    stat_list = []
+    cnt = 0
+    for img_path in input_list:
+        if not img_path.endswith(".png"):
+            continue
+        bn, _, _ = GetFileNameSplit(img_path)
+        img_path = os.path.join(raw_dir, img_path)
+        save_path = os.path.join(output_dir, bn)
+        shutil.copy(img_path, save_path)
+        line = find_row_segmentation_straight(img_path)
+        if line is not None:
+            res_list.append(f"{pre_dir_name}/{bn}\t{line}\n")
+            stat_list.append(f"{abs_dir}\\{bn}\t1\n")
         else:
             print("line is None.")
 
@@ -241,11 +289,16 @@ def fix_label_3():
 
 
 cnt_limit = 10000000
-raw_dir = "../output/diagram_det_rec_dataset/train"
+# raw_dir = "../output/diagram_det_rec_dataset/eval"
+raw_dir = "../output/diagram_warp"
+pre_dir_name = "ppocrlabel_dataset_straight"
 if __name__ == "__main__":
-    weights_path = r'..\runs\train\exp\weights\best.pt'
-    model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
-    warp_back()
+    pass
+    # weights_path = r'..\runs\train\exp\weights\best.pt'
+    # model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
+    # warp_back()
     # fix_label()
     # fix_label_2()
     # fix_label_3()
+
+    warp_back_straight()

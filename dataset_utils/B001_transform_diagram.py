@@ -301,6 +301,8 @@ def do_warp():
 
 cnt_limit = 10000000
 if __name__ == "__main__":
+    # 构建端正的行训练集
+    tmp_disable_factor = 1
     # try_to_warp()
     # arr = np.array([1, 1])
     # print(arr * 2)
