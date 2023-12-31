@@ -118,7 +118,7 @@ def warp_back():
         f.writelines(stat_list)
 
 
-def warp_back_straight():
+def warp_back_straight(cnt_limit, ship_cnt):
     output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
     abs_dir = os.path.dirname(os.path.dirname(__file__))
     abs_dir = abs_dir.replace("/", "\\")
@@ -129,9 +129,14 @@ def warp_back_straight():
     res_list = []
     stat_list = []
     cnt = 0
+
     for img_path in input_list:
         if not img_path.endswith(".png"):
             continue
+        if ship_cnt and cnt <= ship_cnt:
+            cnt += 1
+            continue
+        print("warp_back straight " + img_path)
         bn, _, _ = GetFileNameSplit(img_path)
         img_path = os.path.join(raw_dir, img_path)
         save_path = os.path.join(output_dir, bn)
@@ -146,9 +151,17 @@ def warp_back_straight():
         cnt += 1
         if cnt > cnt_limit:
             break
-    with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(output_dir, "Label.txt"), "r+", encoding="utf-8") as f:
+        lines = f.readlines()
+        if lines[-1].rstrip() == "":
+            lines.pop()
+        lines += res_list
         f.writelines(res_list)
-    with open(os.path.join(output_dir, "fileState.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(output_dir, "fileState.txt"), "r+", encoding="utf-8") as f:
+        lines = f.readlines()
+        if lines[-1].rstrip() == "":
+            lines.pop()
+        lines += stat_list
         f.writelines(stat_list)
 
 
@@ -186,9 +199,9 @@ def board_warp_back(image_path, output_dir, ship_save=None):
         # cv2.imwrite(os.path.join(output_dir, pre + "_min_max" + ext), crop_img)
 
         # 计算rec任务，棋子高32像素，32*19=608
-        # 24*19=456，为什么这个像素warp back后的东西很奇怪？
+        # 24*19=456，为什么这个像素warp back后的东西很奇怪，如没有图像
         wb_len = 608
-        src_pts = [[0, 0], [wb_len, 0], [wb_len, wb_len], [0, wb_len]]
+        src_pts = [[20, 20], [wb_len + 20, 20], [wb_len + 20, wb_len + 20], [20, wb_len + 20]]
         dst_pts = [
             calc_anchor_point(src_pts[0], corners),
             calc_anchor_point(src_pts[1], corners),
@@ -199,7 +212,7 @@ def board_warp_back(image_path, output_dir, ship_save=None):
         save_name = pre + "_wb" + ext
         if ship_save:
             new_image = img.copy()
-            warped_image = cv2.warpPerspective(new_image, M, (wb_len, wb_len), borderMode=cv2.BORDER_CONSTANT,
+            warped_image = cv2.warpPerspective(new_image, M, (wb_len + 40, wb_len + 40), borderMode=cv2.BORDER_CONSTANT,
                                                borderValue=(255, 255, 255, 0))
             # 保存
             cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
@@ -288,17 +301,52 @@ def fix_label_3():
         f.writelines(lines)
 
 
-cnt_limit = 10000000
-# raw_dir = "../output/diagram_det_rec_dataset/eval"
-raw_dir = "../output/diagram_warp"
-pre_dir_name = "ppocrlabel_dataset_straight"
+# def fix_label_4():
+#     def fix_label_pre_dir(input_file_path, output_file_path, old_str, new_str):
+#         # 打开输入文件并读取内容
+#         with open(input_file_path, 'r') as file:
+#             lines = file.readlines()
+#
+#         # 替换每行中的字符串
+#         modified_lines = [line.replace(old_str, new_str) for line in lines]
+#
+#         # 打开输出文件并写入修改后的内容
+#         with open(output_file_path, 'w') as file:
+#             file.writelines(modified_lines)
+#
+#         print(f'File "{input_file_path}" processed. Modified content saved to "{output_file_path}".')
+#
+#     input_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset/Label.txt'
+#     output_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset/Label.txt'
+#     fix_label_pre_dir(input_file_path, output_file_path,
+#                       'ppocrlabel_dataset_straight/', 'ppocrlabel_dataset/')
+#
+#     input_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset_eval/Label.txt'
+#     output_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset_eval/Label.txt'
+#     fix_label_pre_dir(input_file_path, output_file_path,
+#                       'ppocrlabel_dataset_straight_eval/', 'ppocrlabel_dataset_eval/')
+
+
+cnt_limit = 2000000
+# ship_cnt = 2000
+raw_dir = "../output/diagram_det_rec_dataset/eval"
+pre_dir_name = "ppocrlabel_dataset_eval"
+
+# raw_dir = "../output/diagram_warp"
+# pre_dir_name = "ppocrlabel_dataset_straight_eval"
 if __name__ == "__main__":
     pass
-    # weights_path = r'..\runs\train\exp\weights\best.pt'
-    # model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
-    # warp_back()
+    #weights_path = r'..\runs\train\exp\weights\best.pt'
+    #model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
+    #warp_back()
     # fix_label()
     # fix_label_2()
     # fix_label_3()
 
-    warp_back_straight()
+    # 端正的数据集
+    # raw_dir = "../output/diagram_warp"
+    # pre_dir_name = "ppocrlabel_dataset"
+    # warp_back_straight(2000, None)
+    # raw_dir = "../output/diagram_warp"
+    # pre_dir_name = "ppocrlabel_dataset_eval"
+    # warp_back_straight(20000000, 2000)
