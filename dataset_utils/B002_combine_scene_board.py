@@ -9,6 +9,7 @@ import numpy as np
 
 ################## Coco Dataset
 # 定义类别信息
+from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils.B002_combine_scene import combine_scene_image, offset_json_obj, draw_region
 
 info = {
@@ -279,17 +280,33 @@ def try_to():
         for ann in coco_data["annotations"]:
             if image["id"] == ann["image_id"]:
                 draw_region(img, ann["segmentation"])
-                draw_region(img, ann["bbox"])
+                #draw_region(img, ann["bbox"])
         cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
 
+
+
+def pplabel_2_coco(pre_dir_name):
+    output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
+    with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        file_name, json_obj = line.rstrip().split("\t")
+        bn, pre, ext = GetFileNameSplit(file_name)
+        json_obj = json.loads(json_obj)
 
 # 这个归档了，当它完美没bug了
 # dataset_name = "go_board_dataset_v3"
 
 dataset_name = "diagram_det_rec_dataset"
+
+#dataset_name = "go_board_dataset_all"
 dataset_type = "eval"
 cnt_limit = 99999999
 # lock_obj = threading.Lock()
 if __name__ == "__main__":
+    dataset_type = "eval"
+    do_coco_dataset()
+    dataset_type = "train"
     do_coco_dataset()
     # try_to()

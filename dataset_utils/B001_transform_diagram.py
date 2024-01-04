@@ -52,7 +52,7 @@ def random_perspective_transform(image, factor=100):
 
     # 数据集图片是683 * 512或 512 * 683
     # 控制在500像素以内
-    zoom = random.randint(4, 10) / 20
+    zoom = random.randint(10, 10) / 20
     # 计算新的宽度和高度
     new_width = int(n_w * zoom)
     new_height = int(n_h * zoom)
@@ -302,7 +302,7 @@ def do_warp():
 cnt_limit = 10000000
 if __name__ == "__main__":
     # 构建端正的行训练集
-    tmp_disable_factor = 1
+    # tmp_disable_factor = 1
     # try_to_warp()
     # arr = np.array([1, 1])
     # print(arr * 2)

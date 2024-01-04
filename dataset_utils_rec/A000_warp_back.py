@@ -327,6 +327,17 @@ def fix_label_3():
 #                       'ppocrlabel_dataset_straight_eval/', 'ppocrlabel_dataset_eval/')
 
 
+def pplabel_2_coco():
+    output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
+    with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        file_name, json_obj = line.rstrip().split("\t")
+        bn, pre, ext = GetFileNameSplit(file_name)
+        json_obj = json.loads(json_obj)
+
+
 cnt_limit = 2000000
 # ship_cnt = 2000
 raw_dir = "../output/diagram_det_rec_dataset/eval"
@@ -336,9 +347,13 @@ pre_dir_name = "ppocrlabel_dataset_eval"
 # pre_dir_name = "ppocrlabel_dataset_straight_eval"
 if __name__ == "__main__":
     pass
-    #weights_path = r'..\runs\train\exp\weights\best.pt'
-    #model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
-    #warp_back()
+    weights_path = r'..\runs\train\exp\weights\best.pt'
+    model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
+    warp_back()
+
+    raw_dir = "../output/diagram_det_rec_dataset/train"
+    pre_dir_name = "ppocrlabel_dataset"
+    warp_back()
     # fix_label()
     # fix_label_2()
     # fix_label_3()
