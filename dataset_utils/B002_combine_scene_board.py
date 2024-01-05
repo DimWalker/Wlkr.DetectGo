@@ -360,3 +360,4 @@ if __name__ == "__main__":
     # try_to()
 
     pplabel_2_coco("ppocrlabel_dataset_eval")
+    pplabel_2_coco("ppocrlabel_dataset")
