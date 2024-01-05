@@ -22,41 +22,41 @@ info = {
 }
 licenses_list = []
 categories_list = [
+    # {
+    #     "id": 1,
+    #     "name": "board",
+    #     "supercategory": "board"
+    # },
+    # {
+    #     "id": 2,
+    #     "name": "corner",
+    #     "supercategory": "board"
+    # },
     {
         "id": 1,
-        "name": "board",
-        "supercategory": "board"
-    },
-    {
-        "id": 2,
-        "name": "corner",
-        "supercategory": "board"
-    },
-    {
-        "id": 3,
         "name": "row",
         "supercategory": "board"
     },
-    {
-        "id": 4,
-        "name": "col",
-        "supercategory": "board"
-    },
-    {
-        "id": 5,
-        "name": "black",
-        "supercategory": "piece"
-    },
-    {
-        "id": 6,
-        "name": "white",
-        "supercategory": "piece"
-    },
-    {
-        "id": 7,
-        "name": "empty",
-        "supercategory": "piece"
-    },
+    # {
+    #     "id": 4,
+    #     "name": "col",
+    #     "supercategory": "board"
+    # },
+    # {
+    #     "id": 5,
+    #     "name": "black",
+    #     "supercategory": "piece"
+    # },
+    # {
+    #     "id": 6,
+    #     "name": "white",
+    #     "supercategory": "piece"
+    # },
+    # {
+    #     "id": 7,
+    #     "name": "empty",
+    #     "supercategory": "piece"
+    # },
 ]
 
 
@@ -280,33 +280,83 @@ def try_to():
         for ann in coco_data["annotations"]:
             if image["id"] == ann["image_id"]:
                 draw_region(img, ann["segmentation"])
-                #draw_region(img, ann["bbox"])
+                # draw_region(img, ann["bbox"])
         cv2.imwrite(os.path.join(output_dir, image["file_name"]), img)
-
 
 
 def pplabel_2_coco(pre_dir_name):
     output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
-    with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(output_dir, "Label.txt"), "r", encoding="utf-8") as f:
         lines = f.readlines()
 
+    img_list = []
+    ann_list = []
     for line in lines:
         file_name, json_obj = line.rstrip().split("\t")
         bn, pre, ext = GetFileNameSplit(file_name)
         json_obj = json.loads(json_obj)
+        # 获取当前日期和时间
+        current_datetime = datetime.now()
+        # 将日期和时间格式化为指定格式
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d")
+        jpg_img = cv2.imread(os.path.join(output_dir, bn))
+        h, w, _ = jpg_img.shape
+
+        sub_image_info_id = get_next_image_info_id()
+        # 定义图像信息
+        image_info = {
+            "id": sub_image_info_id,
+            "width": w,  # 替换为实际图像宽度
+            "height": h,  # 替换为实际图像高度
+            "file_name": bn,  # 替换为实际图像文件名
+            "license": None,
+            "flickr_url": "",
+            "coco_url": "",
+            "date_captured": formatted_datetime
+        }
+        img_list.append(image_info)
+
+        for rgn in json_obj:
+
+            seg, area, roi = cale_ppt_from_region(rgn["points"])
+            cat_id = find_category_id("row")
+            # 定义注释信息
+            annotation_info = {
+                "id": get_next_annotation_info_id(),
+                "image_id": sub_image_info_id,
+                "category_id": cat_id,  # 替换为实际类别ID
+                "segmentation": [seg],
+                "area": area,  # 替换为实际区域面积
+                "bbox": roi,  # 替换为实际边界框信息 [x, y, width, height]
+                "iscrowd": 0
+            }
+            ann_list.append(annotation_info)
+
+    coco_data = {
+        "info": info,
+        "licenses": licenses_list,
+        "images": img_list,
+        "annotations": ann_list,
+        "categories": categories_list
+    }
+
+    with open(os.path.join(output_dir, 'coco_data.json'), 'w', encoding="utf-8") as json_file:
+        json.dump(coco_data, json_file, indent=2)
 
 # 这个归档了，当它完美没bug了
 # dataset_name = "go_board_dataset_v3"
 
 dataset_name = "diagram_det_rec_dataset"
 
-#dataset_name = "go_board_dataset_all"
+# dataset_name = "go_board_dataset_all"
 dataset_type = "eval"
 cnt_limit = 99999999
 # lock_obj = threading.Lock()
 if __name__ == "__main__":
-    dataset_type = "eval"
-    do_coco_dataset()
-    dataset_type = "train"
-    do_coco_dataset()
+    # dataset_type = "eval"
+    # do_coco_dataset()
+    # dataset_type = "train"
+    # do_coco_dataset()
     # try_to()
+
+    pplabel_2_coco("ppocrlabel_dataset_eval")

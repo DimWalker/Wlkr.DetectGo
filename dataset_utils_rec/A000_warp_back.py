@@ -9,6 +9,7 @@ import torch
 from Wlkr.Common.FileUtils import GetFileNameSplit
 from Wlkr.iocr_utils import calc_distance
 from dataset_utils.B001_transform_diagram import calc_warp_point
+from dataset_utils.B002_combine_scene import draw_region
 
 
 def load_coco_data():
@@ -201,18 +202,26 @@ def board_warp_back(image_path, output_dir, ship_save=None):
         # 计算rec任务，棋子高32像素，32*19=608
         # 24*19=456，为什么这个像素warp back后的东西很奇怪，如没有图像
         wb_len = 608
-        src_pts = [[20, 20], [wb_len + 20, 20], [wb_len + 20, wb_len + 20], [20, wb_len + 20]]
+        of_len = 60
+        src_pts = [[of_len, of_len], [wb_len + of_len, of_len],
+                   [wb_len + of_len, wb_len + of_len], [of_len, wb_len + of_len]]
         dst_pts = [
             calc_anchor_point(src_pts[0], corners),
             calc_anchor_point(src_pts[1], corners),
             calc_anchor_point(src_pts[2], corners),
             calc_anchor_point(src_pts[3], corners)
         ]
+        # draw_region(img, dst_pts)
+        # if not os.path.exists(os.path.join(output_dir, "..", "mid_img")):
+        #     os.makedirs(os.path.join(output_dir, "..", "mid_img"))
+        # cv2.imwrite(os.path.join(output_dir, "..", "mid_img", pre + "_wb" + ext), img)
+
         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
         save_name = pre + "_wb" + ext
         if ship_save:
             new_image = img.copy()
-            warped_image = cv2.warpPerspective(new_image, M, (wb_len + 40, wb_len + 40), borderMode=cv2.BORDER_CONSTANT,
+            warped_image = cv2.warpPerspective(new_image, M, (wb_len + of_len * 2, wb_len + of_len * 2),
+                                               borderMode=cv2.BORDER_CONSTANT,
                                                borderValue=(255, 255, 255, 0))
             # 保存
             cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
@@ -226,116 +235,37 @@ def calc_anchor_point(src_pt, corners):
     dst_pt = None
     min_len = None
     for corner in corners:
+        center = [(corner["xmin"] + corner["xmax"]) / 2, (corner["ymin"] + corner["ymax"]) / 2]
+        l = calc_distance(src_pt, center)
         if dst_pt is None:
-            dst_pt = [corner["xmin"], corner["ymin"]]
-            min_len = calc_distance(src_pt, dst_pt)
+            dst_pt = center
+            min_len = l
+        else:
+            if l < min_len:
+                dst_pt = center
+                min_len = l
 
-        l = calc_distance(src_pt, [corner["xmin"], corner["ymin"]])
-        if l < min_len:
-            dst_pt = [corner["xmin"], corner["ymin"]]
-            min_len = l
-        l = calc_distance(src_pt, [corner["xmax"], corner["ymin"]])
-        if l < min_len:
-            dst_pt = [corner["xmax"], corner["ymin"]]
-            min_len = l
-        l = calc_distance(src_pt, [corner["xmax"], corner["ymax"]])
-        if l < min_len:
-            dst_pt = [corner["xmax"], corner["ymax"]]
-            min_len = l
-        l = calc_distance(src_pt, [corner["xmin"], corner["ymax"]])
-        if l < min_len:
-            dst_pt = [corner["xmin"], corner["ymax"]]
-            min_len = l
+        # if dst_pt is None:
+        #     dst_pt = [corner["xmin"], corner["ymin"]]
+        #     min_len = calc_distance(src_pt, dst_pt)
+        # else:
+        #     l = calc_distance(src_pt, [corner["xmin"], corner["ymin"]])
+        #     if l < min_len:
+        #         dst_pt = [corner["xmin"], corner["ymin"]]
+        #         min_len = l
+        # l = calc_distance(src_pt, [corner["xmax"], corner["ymin"]])
+        # if l < min_len:
+        #     dst_pt = [corner["xmax"], corner["ymin"]]
+        #     min_len = l
+        # l = calc_distance(src_pt, [corner["xmax"], corner["ymax"]])
+        # if l < min_len:
+        #     dst_pt = [corner["xmax"], corner["ymax"]]
+        #     min_len = l
+        # l = calc_distance(src_pt, [corner["xmin"], corner["ymax"]])
+        # if l < min_len:
+        #     dst_pt = [corner["xmin"], corner["ymax"]]
+        #     min_len = l
     return dst_pt
-
-
-def fix_label():
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    for l, line in enumerate(lines):
-        lines[l] = "ppocrlabel_dataset/" + line
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "w", encoding="utf-8") as f:
-        f.writelines(lines)
-
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    for l, line in enumerate(lines):
-        lines[
-            l] = r"D:\WorkArea\Private_Project\Wlkr.DetectGo\output\diagram_det_rec_dataset\ppocrlabel_dataset" + "\\" + line
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
-        f.writelines(lines)
-
-
-def fix_label_2():
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    for l, line in enumerate(lines):
-        lines[l] = line.replace("/", "\\")
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/fileState.txt", "w", encoding="utf-8") as f:
-        f.writelines(lines)
-
-
-def fix_label_3():
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    for l, line in enumerate(lines):
-        fn, json_str = line.split("\t")
-        json_obj = json.loads(json_str)
-        for o in json_obj:
-            if "." in o["transcription"]:
-                print(o["transcription"])
-                o["transcription"] = o["transcription"].replace("1.0", "").replace("2.0", "").replace("0.0", "")
-        lines[l] = fn + "\t" + json.dumps(json_obj) + "\n"
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/Label.txt", "w", encoding="utf-8") as f:
-        f.writelines(lines)
-
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/rec_gt.txt", "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    for l, line in enumerate(lines):
-        fn, transcription = line.split("\t")
-        if "." in transcription:
-            print(transcription)
-            transcription = transcription.replace("1.0", "").replace("2.0", "").replace("0.0", "")
-        lines[l] = fn + "\t" + transcription
-    with open("../output/diagram_det_rec_dataset/ppocrlabel_dataset/rec_gt.txt", "w", encoding="utf-8") as f:
-        f.writelines(lines)
-
-
-# def fix_label_4():
-#     def fix_label_pre_dir(input_file_path, output_file_path, old_str, new_str):
-#         # 打开输入文件并读取内容
-#         with open(input_file_path, 'r') as file:
-#             lines = file.readlines()
-#
-#         # 替换每行中的字符串
-#         modified_lines = [line.replace(old_str, new_str) for line in lines]
-#
-#         # 打开输出文件并写入修改后的内容
-#         with open(output_file_path, 'w') as file:
-#             file.writelines(modified_lines)
-#
-#         print(f'File "{input_file_path}" processed. Modified content saved to "{output_file_path}".')
-#
-#     input_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset/Label.txt'
-#     output_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset/Label.txt'
-#     fix_label_pre_dir(input_file_path, output_file_path,
-#                       'ppocrlabel_dataset_straight/', 'ppocrlabel_dataset/')
-#
-#     input_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset_eval/Label.txt'
-#     output_file_path = '/root/PaddleOCR/datasets/ppocrlabel_dataset_eval/Label.txt'
-#     fix_label_pre_dir(input_file_path, output_file_path,
-#                       'ppocrlabel_dataset_straight_eval/', 'ppocrlabel_dataset_eval/')
-
-
-def pplabel_2_coco():
-    output_dir = "../output/diagram_det_rec_dataset/" + pre_dir_name
-    with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
-        lines = f.readlines()
-
-    for line in lines:
-        file_name, json_obj = line.rstrip().split("\t")
-        bn, pre, ext = GetFileNameSplit(file_name)
-        json_obj = json.loads(json_obj)
 
 
 cnt_limit = 2000000
@@ -349,14 +279,14 @@ if __name__ == "__main__":
     pass
     weights_path = r'..\runs\train\exp\weights\best.pt'
     model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
+
+    raw_dir = "../output/diagram_det_rec_dataset/eval"
+    pre_dir_name = "ppocrlabel_dataset_eval"
     warp_back()
 
     raw_dir = "../output/diagram_det_rec_dataset/train"
     pre_dir_name = "ppocrlabel_dataset"
     warp_back()
-    # fix_label()
-    # fix_label_2()
-    # fix_label_3()
 
     # 端正的数据集
     # raw_dir = "../output/diagram_warp"

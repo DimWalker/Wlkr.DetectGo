@@ -96,7 +96,7 @@ def draw_region(image, pts):
                       color=(
                           random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
                       thickness=2)
-    elif len(pts) == 4 and isinstance(pts[0], list) == 2:
+    elif len(pts) == 4 and isinstance(pts[0], list) and len(pts[0]) == 2:
         points = np.array(pts, np.int32).reshape((4, 2))
         # 画四边形
         cv2.polylines(image, [points], isClosed=True,
