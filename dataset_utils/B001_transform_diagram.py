@@ -10,7 +10,7 @@ from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils.B000_combine_board import load_diagram
 from dataset_utils.B002_combine_scene import draw_region
 
-tmp_disable_factor = 37
+tmp_disable_factor = 19
 factor_cnt = 0
 lock_factor_cnt = threading.Lock()
 
@@ -52,7 +52,7 @@ def random_perspective_transform(image, factor=100):
 
     # 数据集图片是683 * 512或 512 * 683
     # 控制在500像素以内
-    zoom = random.randint(10, 10) / 20
+    zoom = random.randint(80, 100) / 200
     # 计算新的宽度和高度
     new_width = int(n_w * zoom)
     new_height = int(n_h * zoom)
