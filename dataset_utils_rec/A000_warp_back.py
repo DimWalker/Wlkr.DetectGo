@@ -100,7 +100,7 @@ def warp_back():
             continue
         bn, _, _ = GetFileNameSplit(img_path)
         img_path = os.path.join(raw_dir, img_path)
-        M, save_name = board_warp_back(img_path, output_dir, True)
+        M, save_name = board_warp_back(img_path, output_dir,True)
         if M is None:
             continue
         line = find_row_segmentation(coco_data, sc_wp_list, bn, row_cate_id, M)
@@ -218,13 +218,13 @@ def board_warp_back(image_path, output_dir, ship_save=None):
 
         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
         save_name = pre + "_wb" + ext
-        if ship_save:
+        if not ship_save:
             new_image = img.copy()
             warped_image = cv2.warpPerspective(new_image, M, (wb_len + of_len * 2, wb_len + of_len * 2),
                                                borderMode=cv2.BORDER_CONSTANT,
                                                borderValue=(255, 255, 255, 0))
-            # 保存
-            cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
+        # 保存
+        cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
         return M, save_name
     else:
         print("corners < 4")
@@ -277,7 +277,7 @@ pre_dir_name = "ppocrlabel_dataset_eval"
 # pre_dir_name = "ppocrlabel_dataset_straight_eval"
 if __name__ == "__main__":
     pass
-    weights_path = r'..\runs\train\exp\weights\best.pt'
+    weights_path = r'..\runs\train\board_corner\weights\best.pt'
     model = torch.hub.load(r'../../yolov5', 'custom', path=weights_path, source='local')
 
     raw_dir = "../output/diagram_det_rec_dataset/eval"
