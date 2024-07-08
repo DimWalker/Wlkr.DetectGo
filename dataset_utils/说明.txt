@@ -1,7 +1,8 @@
 类别A 素材准备
 A000 干净棋盘
 A001 找棋盘格子，棋盘json
-A002 棋子轮廓，piece_segmentation.json，empty_segmentation.json
+A002 棋子轮廓，segment_piece.json，segment_empty.json
+
 类别B 合成素材
 B000 棋谱、棋盘、棋子合成，输出label.txt
 B001 透视转换棋盘，输出json
@@ -16,3 +17,9 @@ B001 透视转换棋盘，输出json
   "row_regions": [19行],
   "col_regions": [19列]
 }
+B002-1 场景合成的通用
+B002-2 场景合成，制作数据集，pplabel和coco两种格式
+B002 coco转yolo格式
+
+Z998 将前面的步骤整合，方便重新制作
+Z999 一些通用方法

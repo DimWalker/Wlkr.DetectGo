@@ -1,4 +1,7 @@
-# 必要知识：透视变换、齐次矩阵
+"""
+透视转换棋盘，输出json
+"""
+
 import json
 import os
 import random
@@ -65,7 +68,7 @@ def random_perspective_transform(image, factor=100):
 
 def refresh_matrix(json_obj, M, factor, zoom, dst_pts, dia_tmpl_path):
     # 由于后面代码会改变json_obj的值，故必须放在前面
-    json_obj = calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path)
+    json_obj = calc_segment_piece(json_obj, M, factor, zoom, dia_tmpl_path)
 
     json_obj["dst_pts"] = dst_pts.astype(np.int32).tolist()
     regions = []
@@ -149,11 +152,11 @@ def calc_row_col(json_obj):
     json_obj["col_regions"] = cols
 
 
-def calc_piece_segmentation(json_obj, M, factor, zoom, dia_tmpl_path):
+def calc_segment_piece(json_obj, M, factor, zoom, dia_tmpl_path):
     diagram = load_diagram(dia_tmpl_path)
-    with open("../assets/material/piece_segmentation.json", "r", encoding="utf-8") as f:
+    with open("../assets/material/segment_piece.json", "r", encoding="utf-8") as f:
         p_seg = json.load(f)
-    with open("../assets/material/empty_segmentation.json", "r", encoding="utf-8") as f:
+    with open("../assets/material/segment_empty.json", "r", encoding="utf-8") as f:
         e_seg = json.load(f)
     # 棋子原图像素60px
     zoom_len = json_obj["avg_line_len"] / 60

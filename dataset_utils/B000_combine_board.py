@@ -1,3 +1,7 @@
+"""
+合并棋盘与棋子，并输出label.txt
+"""
+
 import json
 import os
 import random

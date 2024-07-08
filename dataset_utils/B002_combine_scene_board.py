@@ -1,4 +1,9 @@
-# 读取 JPG 图像
+"""
+场景合成，制作数据集
+"""
+
+
+
 import json
 import os.path
 import random

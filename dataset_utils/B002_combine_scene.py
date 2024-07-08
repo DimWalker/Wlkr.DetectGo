@@ -1,4 +1,6 @@
-# 读取 JPG 图像
+"""
+读取 JPG 图像
+"""
 import json
 import random
 import cv2

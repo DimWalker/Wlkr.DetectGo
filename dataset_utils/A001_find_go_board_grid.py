@@ -1,3 +1,7 @@
+"""
+找去棋盘上的点，确认下子位置
+"""
+
 import json
 import math
 import os

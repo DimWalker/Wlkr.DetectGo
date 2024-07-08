@@ -1,3 +1,8 @@
+"""
+对搜索的素材进行预处理
+如resize到统一规格
+"""
+
 import os
 import cv2
 import numpy as np
@@ -63,10 +68,9 @@ def change_color():
     # 将颜色范围内的像素改为透明
     image[mask > 0, 3] = 0
 
-
     cv2.imwrite('../assets/unclassified/kou/O018.png', image)
 
 
 if __name__ == "__main__":
     resize_dir()
-    #change_color()
+    # change_color()
