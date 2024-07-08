@@ -297,8 +297,10 @@ def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_
                 id_list.append(a["id"])
                 s["ori_id"] = a["id"]
 
+    json_obj["categories"] = categories_list_sub
     json_obj["annotations"] = [x for x in json_obj["annotations"]
                                if x["category_id"] in id_list]
+
     id_cnt = 0
     for x in json_obj["annotations"]:
         id_cnt += 1
