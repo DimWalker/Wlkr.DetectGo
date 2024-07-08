@@ -26,6 +26,10 @@ def go_board_dataset_all(categories_list_all):
 
 
 def go_board_dataset_sub():
+    """
+    生成多个子集
+    :return:
+    """
     # 棋盘，角
     categories_list_b_c = [
         {
@@ -114,12 +118,12 @@ def go_board_dataset_sub():
 
 if __name__ == "__main__":
     # 基础棋谱
-    # remove_module_dir("../output/diagram_img")
-    # do_combine()
+    remove_module_dir("../output/diagram_img")
+    do_combine()
 
     # 数据增强：透视变换
-    # remove_module_dir("../output/diagram_warp")
-    # do_warp()
+    remove_module_dir("../output/diagram_warp")
+    do_warp()
 
     # 棋谱到场景 all
     categories_list_all = [
@@ -159,14 +163,14 @@ if __name__ == "__main__":
             "supercategory": "piece"
         },
     ]
-    # go_board_dataset_all(categories_list_all)
-    # go_board_dataset_sub()
+    go_board_dataset_all(categories_list_all)
+    go_board_dataset_sub()
 
     # coco转yolo格式
     # 相对路径的处理不够好，写死了，故相关路径的格式不能变
-    # coco_to_yolo_fmt("../output/go_board_dataset_all/train"
-    #                  , "../output/go_board_dataset_all/train/all"
-    #                  , "coco_data_all.json", "coco_data_all.txt")
+    coco_to_yolo_fmt("../output/go_board_dataset_all/train"
+                     , "../output/go_board_dataset_all/train/all"
+                     , "coco_data_all.json", "coco_data_all.txt")
     coco_to_yolo_fmt("../output/go_board_dataset_all/eval"
                      , "../output/go_board_dataset_all/eval/all"
                      , "coco_data_all.json", "coco_data_all.txt")
