@@ -6,10 +6,9 @@
 
 import os
 import shutil
-
-# 跟目录
 import sys
 
+# 跟目录，兼容linux
 code_root_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, code_root_path)
 
