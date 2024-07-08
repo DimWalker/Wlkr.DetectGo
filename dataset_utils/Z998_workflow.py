@@ -7,6 +7,12 @@
 import os
 import shutil
 
+# 跟目录
+import sys
+
+code_root_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, code_root_path)
+
 from dataset_utils.B000_combine_board import do_combine
 from dataset_utils.B001_transform_diagram import do_warp
 from dataset_utils.B002_combine_scene_board import do_coco_dataset, all_to_sub
