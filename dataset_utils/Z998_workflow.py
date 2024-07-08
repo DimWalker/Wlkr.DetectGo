@@ -198,14 +198,14 @@ def coco_to_yolo(label_type):
 
 
 if __name__ == "__main__":
-    # # 基础棋谱
-    # remove_module_dir("../output/diagram_img")
-    # do_combine()
-    #
-    # # 数据增强：透视变换
-    # remove_module_dir("../output/diagram_warp")
-    # do_warp()
-    #
+    # 基础棋谱
+    remove_module_dir("../output/diagram_img")
+    do_combine()
+
+    # 数据增强：透视变换
+    remove_module_dir("../output/diagram_warp")
+    do_warp()
+
     # 棋谱到场景 all
     categories_list_all = [
         {
