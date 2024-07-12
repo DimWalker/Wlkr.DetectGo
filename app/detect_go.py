@@ -10,7 +10,7 @@ from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils_rec.A000_warp_back import calc_anchor_point
 
 
-def board_warp_back(image_path, ship_save=None):
+def board_warp_back(image_path, skip_save=None):
     """
     todo: 角度少于阈值时，不warp_back
     todo: corner in board
@@ -69,7 +69,7 @@ def board_warp_back(image_path, ship_save=None):
 
         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
         save_name = pre + "_wb" + ext
-        if not ship_save:
+        if not skip_save:
             new_image = img.copy()
             warped_image = cv2.warpPerspective(new_image, M, (wb_len + of_len * 2, wb_len + of_len * 2),
                                                borderMode=cv2.BORDER_CONSTANT,
@@ -82,7 +82,7 @@ def board_warp_back(image_path, ship_save=None):
         return None, None
 
 
-def board_split_row(image_path, threshole= 0.75,ship_save=None):
+def board_split_row(image_path, threshole= 0.75,skip_save=None):
     print("split row " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model_r(image_path)
