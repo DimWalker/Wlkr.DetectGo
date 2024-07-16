@@ -107,6 +107,10 @@ def extract_diagram():
 
     diagram_list = []
     for filename in os.listdir(zip_dir):
+        # todo: 小数据测试集
+        # if filename != "aa_my_label.zip":
+        #     continue
+
         src_path = os.path.join(zip_dir, filename)
         _, pre, _ = GetFileNameSplit(filename)
         dst_path = os.path.join(output_dir, pre)

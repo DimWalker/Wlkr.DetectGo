@@ -12,6 +12,7 @@ B001 透视转换棋盘，输出json
   "avg_line_len": 格子平均长度,
   "pieces_seg":[棋子空格seg,圆形16点],
   "dst_pts":[棋盘seg],
+  "board_region": [貌似和dst_pts一样，忘记怎么想的了]
   "regions":[格子seg],
   "corners": [4个角],
   "row_regions": [19行],
