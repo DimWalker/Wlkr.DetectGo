@@ -274,6 +274,87 @@ def board_warp_back(image_path, output_dir, skip_save=None):
         return None, None
 
 
+def board_warp_back_straight(image_path, output_dir, skip_save=None):
+    print("warp_back " + image_path)
+    bn, pre, ext = GetFileNameSplit(image_path)
+    result = model(image_path)
+
+    # v8格式
+    json_obj = []
+    for idx in range(len(result[0].boxes)):
+        boxes = result[0].boxes
+        json_obj.append(
+            {
+                "cls": int(boxes.cls[idx]),
+                "conf": float(boxes.conf[idx]),
+                "name": result[0].names[int(boxes.cls[idx])],
+                "xmin": float(boxes.xyxy[idx][0]),
+                "xmax": float(boxes.xyxy[idx][2]),
+                "ymin": float(boxes.xyxy[idx][1]),
+                "ymax": float(boxes.xyxy[idx][3])
+            }
+        )
+
+    # v5格式
+    # json_obj = result[0].pandas().xyxy[0].to_json(orient='records')
+    # json_obj = json.loads(json_obj)
+
+    corners = []
+    for cls in json_obj:
+        if cls["name"] == "corner":
+            corners.append(cls)
+    img = cv2.imread(image_path)
+    if len(corners) == 4:
+        # 原图截图
+        # color = (0, 255, 0)  # BGR颜色，这里是绿色
+        # thickness = 2
+        # min_x, min_y, max_x, max_y = -1, -1, -1, -1
+        # for corner in corners:
+        #     if corner["xmin"] < min_x or min_x == -1:
+        #         min_x = corner["xmin"]
+        #     if corner["ymin"] < min_y or min_y == -1:
+        #         min_y = corner["ymin"]
+        #     if corner["xmax"] > max_x or max_x == -1:
+        #         max_x = corner["xmax"]
+        #     if corner["ymax"] > max_y or max_y == -1:
+        #         max_y = corner["ymax"]
+        #     cv2.rectangle(img, (int(corner["xmin"]), int(corner["ymin"])),
+        #                   (int(corner["xmax"]), int(corner["ymax"])), color, thickness)
+        # min_x, min_y, max_x, max_y = int(min_x), int(min_y), int(max_x), int(max_y)
+        # crop_img = img[min_y:max_y, min_x:max_x]
+        # cv2.imwrite(os.path.join(output_dir, pre + "_min_max" + ext), crop_img)
+
+        # 计算rec任务，棋子高32像素，32*19=608
+        # 24*19=456，为什么这个像素warp back后的东西很奇怪，如没有图像
+        wb_len = 608
+        of_len = 60
+        src_pts = [[of_len, of_len], [wb_len + of_len, of_len],
+                   [wb_len + of_len, wb_len + of_len], [of_len, wb_len + of_len]]
+        dst_pts = [
+            calc_anchor_point(src_pts[0], corners),
+            calc_anchor_point(src_pts[1], corners),
+            calc_anchor_point(src_pts[2], corners),
+            calc_anchor_point(src_pts[3], corners)
+        ]
+        # draw_region(img, dst_pts)
+        # if not os.path.exists(os.path.join(output_dir, "..", "mid_img")):
+        #     os.makedirs(os.path.join(output_dir, "..", "mid_img"))
+        # cv2.imwrite(os.path.join(output_dir, "..", "mid_img", pre + "_wb" + ext), img)
+
+        M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
+        save_name = pre + "_wb" + ext
+        if not skip_save:
+            new_image = img.copy()
+            warped_image = cv2.warpPerspective(new_image, M, (wb_len + of_len * 2, wb_len + of_len * 2),
+                                               borderMode=cv2.BORDER_CONSTANT,
+                                               borderValue=(255, 255, 255, 0))
+            # 保存
+            cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
+        return M, save_name
+    else:
+        print("corners len: " + str(len(corners)))
+        return None, None
+
 def calc_anchor_point(src_pt, corners):
     dst_pt = None
     min_len = None

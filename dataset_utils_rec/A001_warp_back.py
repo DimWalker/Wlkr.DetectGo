@@ -320,27 +320,27 @@ if __name__ == "__main__":
     # warp back后，空棋子的偏移较大（没在中心的十字上）
     # 改用其他方式生成棋子的训练集
     cate_name_lsit = ["black", "white", "empty"]
-    # raw_dir = "../output/go_board_dataset_all/eval"
-    # dataset_name = "diagram_pplabel_dataset_bwn"
-    # pre_dir_name = "eval"
-    # output_dir = f"../output/{dataset_name}/{pre_dir_name}"
-    # warp_back(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
-    #
-    # raw_dir = "../output/go_board_dataset_all/train"
-    # dataset_name = "diagram_pplabel_dataset_bwn"
-    # pre_dir_name = "train"
-    # output_dir = f"../output/{dataset_name}/{pre_dir_name}"
-    # warp_back(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
-
-    # 端正的数据集
     raw_dir = "../output/go_board_dataset_all/eval"
-    dataset_name = "diagram_pplabel_dataset_bwn_sta"
+    dataset_name = "diagram_pplabel_dataset_bwn"
     pre_dir_name = "eval"
     output_dir = f"../output/{dataset_name}/{pre_dir_name}"
-    warp_back_straight(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
+    warp_back(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
 
     raw_dir = "../output/go_board_dataset_all/train"
-    dataset_name = "diagram_pplabel_dataset_bwn_sta"
+    dataset_name = "diagram_pplabel_dataset_bwn"
     pre_dir_name = "train"
     output_dir = f"../output/{dataset_name}/{pre_dir_name}"
-    warp_back_straight(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
+    warp_back(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
+
+    # 端正的数据集
+    # raw_dir = "../output/go_board_dataset_all/eval"
+    # dataset_name = "diagram_pplabel_dataset_bwn_sta"
+    # pre_dir_name = "eval"
+    # output_dir = f"../output/{dataset_name}/{pre_dir_name}"
+    # warp_back_straight(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
+    #
+    # raw_dir = "../output/go_board_dataset_all/train"
+    # dataset_name = "diagram_pplabel_dataset_bwn_sta"
+    # pre_dir_name = "train"
+    # output_dir = f"../output/{dataset_name}/{pre_dir_name}"
+    # warp_back_straight(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_lsit)
