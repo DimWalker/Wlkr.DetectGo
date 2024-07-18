@@ -197,7 +197,7 @@ def board_warp_back(image_path, output_dir, skip_save=None):
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model(image_path)
 
-    # v8格式
+    # v8格式转v5格式
     json_obj = []
     for idx in range(len(result[0].boxes)):
         boxes = result[0].boxes
