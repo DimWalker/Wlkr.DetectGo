@@ -5,6 +5,7 @@ from datetime import datetime
 
 import cv2
 import numpy as np
+from numpy import ndarray
 
 from Wlkr.Common.FileUtils import GetFileNameSplit
 from Wlkr.iocr_utils import point_in_region, calc_warp_point, sort_region_by, PointType
@@ -26,14 +27,20 @@ class Go_Detector():
         self.qi_max_det = 400
         self.qi_conf = 0.75
         self.skip_save = False
+        # self.threshold_qi = {
+        #     "black": 0.8,
+        #     "white": 0.8,
+        #     "empty": 0.6,
+        # }
 
     def execute(self, image_path):
         board_objects = self.detect_o_c(image_path)
         board_objects = self.calc_board_warp_back(board_objects)
         board_objects, warped_img_list = self.crop_board_warp_back(board_objects, image_path)
-        board_objects = self.detect_bwn(board_objects, warped_img_list)
+        board_objects = self.detect_bwn(board_objects, warped_img_list, image_path)
         board_objects = self.qi_regions_to_diagram(board_objects)
         self.print_diagram(board_objects)
+        self.dump_result(board_objects, image_path)
         return board_objects
 
     def detect_o_c(self, image_path):
@@ -119,12 +126,12 @@ class Go_Detector():
                 warped_img_list.append(None)
         return board_objects, warped_img_list
 
-    def detect_bwn(self, board_objects, warped_img_list):
+    def detect_bwn(self, board_objects, warped_img_list, image_path):
         # todo : 再找一次棋盘
-
+        bn, pre, ext = GetFileNameSplit(image_path)
         for idx_b, board in enumerate(board_objects):
             if warped_img_list[idx_b] is not None:
-                result = self.model_bwn(warped_img_list[idx_b], max_det=400, conf=0.8)
+                result = self.model_bwn(warped_img_list[idx_b], max_det=400)
                 json_obj = []
                 boxes = result[0].boxes
                 for idx in range(len(boxes)):
@@ -143,22 +150,22 @@ class Go_Detector():
                                         [qi_obj["xmin"], qi_obj["ymax"]]]
                     json_obj.append(qi_obj)
 
-                qi_regions = sort_region_by(json_obj, "region", PointType.LeftTop, 3)
+                qi_regions = sort_region_by(json_obj, "region", PointType.Center, 3)
                 board["qi_regions"] = qi_regions
 
                 if not self.skip_save:
-                    now = datetime.now()
-                    formatted_time = now.strftime('%Y%m%d%H%M%S%f')
-                    cv2.imwrite(f"{self.output_dir}/{formatted_time}_warp.jpg", warped_img_list[idx_b])
-                    result[0].save(filename=f"{self.output_dir}/{formatted_time}_det.jpg"
-                                   , conf=False, labels=False)  # save to disk
+                    # now = datetime.now()
+                    # formatted_time = now.strftime('%Y%m%d%H%M%S%f')
+                    cv2.imwrite(f"{self.output_dir}/{pre}_{idx_b}_warp.{ext}", warped_img_list[idx_b])
+                    result[0].save(filename=f"{self.output_dir}/{pre}_{idx_b}__det.{ext}"
+                                   , conf=True, labels=True, show_name=None)  # save to disk
 
         return board_objects
 
     def qi_regions_to_diagram(self, board_objects):
 
         for idx, board in enumerate(board_objects):
-            if "qi_regions" not in board["qi_regions"]:
+            if "qi_regions" not in board:
                 continue
             matrix = []
             for idx_r, row in enumerate(board["qi_regions"]):
@@ -175,6 +182,18 @@ class Go_Detector():
                 for idx_r, row in enumerate(board["diagram"]):
                     d += ",".join(row) + "\n"
                 print(f"diagram {idx}:\n" + d)
+
+    def dump_result(self, board_objects, image_path):
+        bn, pre, ext = GetFileNameSplit(image_path)
+
+        for idx, board in enumerate(board_objects):
+            if "M" not in board:
+                continue
+            if isinstance(board["M"], ndarray):
+                board["M"] = board["M"].tolist()
+            json_path = os.path.join(self.output_dir, f"{pre}_{idx}.json")
+            with open(json_path, mode="w", encoding="utf-8") as f:
+                json.dump(board_objects, f)
 
     # def board_warp_back(self, image_path, skip_save=None):
     #     """

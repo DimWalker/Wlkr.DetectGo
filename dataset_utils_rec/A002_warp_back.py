@@ -130,6 +130,53 @@ def find_row_segmentation_straight(img_path, M):
                        "difficult": False,
                        "key_cls": "None"}
         trs.append(text_region)
+
+    # 棋盘
+    pnts = []
+    for pidx in range(len(json_obj["dst_pts"])):
+        pnts.append(
+            calc_warp_point(M,
+                            json_obj["dst_pts"][pidx][0],
+                            json_obj["dst_pts"][pidx][1])
+        )
+    transcription = "board"
+    # 计算最小x和最大x
+    min_x = min(point[0] for point in pnts)
+    max_x = max(point[0] for point in pnts)
+    # 计算最小y和最大y
+    min_y = min(point[1] for point in pnts)
+    max_y = max(point[1] for point in pnts)
+    pnts = [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]]
+
+    text_region = {"transcription": transcription,
+                   "points": pnts,
+                   "difficult": False,
+                   "key_cls": "None"}
+    trs.append(text_region)
+    # 4个角
+    for a, ann in enumerate(json_obj["corners"]):
+        pnts = []
+        for pidx in range(len(ann)):
+            pnts.append(
+                calc_warp_point(M,
+                                ann[pidx][0],
+                                ann[pidx][1])
+            )
+
+        transcription = "corner"
+        # 计算最小x和最大x
+        min_x = min(point[0] for point in pnts)
+        max_x = max(point[0] for point in pnts)
+        # 计算最小y和最大y
+        min_y = min(point[1] for point in pnts)
+        max_y = max(point[1] for point in pnts)
+        pnts = [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]]
+
+        text_region = {"transcription": transcription,
+                       "points": pnts,
+                       "difficult": False,
+                       "key_cls": "None"}
+        trs.append(text_region)
     return json.dumps(trs, ensure_ascii=False)
 
 
@@ -362,7 +409,7 @@ if __name__ == "__main__":
 
     # warp back后，空棋子的偏移较大（没在中心的十字上）
     # 改用其他方式生成棋子的训练集
-    cate_name_lsit = ["black", "white", "empty"]
+    cate_name_lsit = ["board", "corner", "black", "white", "empty"]
     # raw_dir = "../output/go_board_dataset_all/eval"
     # dataset_name = "diagram_pplabel_dataset_bwn"
     # pre_dir_name = "eval"

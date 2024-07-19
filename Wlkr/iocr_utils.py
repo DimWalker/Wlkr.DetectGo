@@ -55,6 +55,7 @@ def calc_warp_point(point, M):
     p_y = y / r if r != 0 else y
     return [p_x, p_y]
 
+
 class PointType(Enum):
     LeftTop = 1
     RightTop = 2
@@ -62,6 +63,7 @@ class PointType(Enum):
     LeftBottom = 4
     Center = 5
     WrapPoint = 6
+
 
 def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5):
     """
@@ -77,7 +79,7 @@ def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5):
     # y轴排序
     y_sort = sorted(region_list, key=lambda x: get_point(x, region_key_name, pt)[0])
     y_sort = sorted(y_sort, key=lambda x: get_point(x, region_key_name, pt)[1])
-    #print(y_sort)
+    # print(y_sort)
     # 分行
     matrix = []
     line = [y_sort[0]]
@@ -105,6 +107,7 @@ def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5):
     # print(matrix)
     return matrix
 
+
 def get_point(x, region_key_name, pt):
     """
     由于数据结构不统一
@@ -119,5 +122,16 @@ def get_point(x, region_key_name, pt):
         return x[region_key_name][2]
     elif pt == PointType.LeftBottom:
         return x[region_key_name][3]
+    elif pt == PointType.Center:
+        return [
+            (x[region_key_name][0][0] +
+             x[region_key_name][1][0] +
+             x[region_key_name][2][0] +
+             x[region_key_name][3][0]) / 4,
+            (x[region_key_name][0][1] +
+             x[region_key_name][1][1] +
+             x[region_key_name][2][1] +
+             x[region_key_name][3][1]) / 4
+        ]
     else:
         return x[region_key_name]

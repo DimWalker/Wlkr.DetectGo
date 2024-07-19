@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shutil
 from datetime import datetime
 
 import cv2
@@ -9,6 +10,7 @@ from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils.B002_combine_scene_board import get_next_image_info_id, cale_ppt_from_region, find_category_id, \
     get_next_annotation_info_id, info, licenses_list
 from dataset_utils.B003_coco_to_yolo_fmt import coco_to_yolo_fmt
+from yolo_utils.yolov8_utils import find_images_in_folder
 
 
 def pplabel_2_coco(categories_list):
@@ -54,8 +56,9 @@ def pplabel_2_coco(categories_list):
                 cate_name = "black"
             elif cate_name == "2":
                 cate_name = "white"
-            else:
+            elif cate_name == "0":
                 cate_name = "empty"
+
             seg, area, roi = cale_ppt_from_region(rgn["points"])
             # todo:
             cat_id = find_category_id(cate_name, categories_list)
@@ -94,25 +97,64 @@ def coco_to_yolo(label_type="bwn"):
                      , json_file_path, txt_file_path)
 
 
+def split_dataset(label_type="bwn"):
+    src_img_path = "../output/warp_back_straight"
+    label_path = f"../output/warp_back_straight/{label_type}"
+
+    # 指定训练集和评估集文件夹路径
+    train_path = f"../output/go_diagram_dataset_{label_type}/train"
+    eval_path = f"../output/go_diagram_dataset_{label_type}/eval"
+
+    if os.path.exists(train_path):
+        shutil.rmtree(train_path)
+    if os.path.exists(eval_path):
+        shutil.rmtree(eval_path)
+    os.makedirs(train_path, exist_ok=True)
+    os.makedirs(eval_path, exist_ok=True)
+
+    images = find_images_in_folder(src_img_path)
+    split_point = int(len(images) * 0.7)
+    for image in images[:split_point]:
+        bn, pre, ext = GetFileNameSplit(image)
+        shutil.copy(image, os.path.join(train_path, bn))
+        shutil.copy(os.path.join(label_path, pre + ".txt"), os.path.join(train_path, pre + ".txt"))
+
+    for image in images[split_point:]:
+        bn, pre, ext = GetFileNameSplit(image)
+        shutil.copy(image, os.path.join(eval_path, bn))
+        shutil.copy(os.path.join(label_path, pre + ".txt"), os.path.join(eval_path, pre + ".txt"))
+
+
 if __name__ == "__main__":
     pass
-    # categories_list_b_w_n = [
+    # categories_list_ocbwn = [
     #     {
     #         "id": 1,
+    #         "name": "board",
+    #         "supercategory": "board"
+    #     },
+    #     {
+    #         "id": 2,
+    #         "name": "corner",
+    #         "supercategory": "board"
+    #     },
+    #     {
+    #         "id": 3,
     #         "name": "black",
     #         "supercategory": "piece"
     #     },
     #     {
-    #         "id": 2,
+    #         "id": 4,
     #         "name": "white",
     #         "supercategory": "piece"
     #     },
     #     {
-    #         "id": 3,
+    #         "id": 5,
     #         "name": "empty",
     #         "supercategory": "piece"
     #     },
     # ]
-    # pplabel_2_coco(categories_list_b_w_n)
+    # pplabel_2_coco(categories_list_ocbwn)
 
-    coco_to_yolo()
+    # coco_to_yolo("ocbwn")
+    split_dataset("ocbwn")
