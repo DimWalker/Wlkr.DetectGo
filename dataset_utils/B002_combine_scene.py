@@ -89,21 +89,29 @@ def offset_json_obj(json_path, offset_x, offset_y, zoom):
     return json_obj
 
 
-def draw_region(image, pts):
+def draw_region(image, pts, color=None):
+    """
+
+    :param image:
+    :param pts:
+    :return:
+    """
+
+    if color is None:
+        color = (
+            random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
     if len(pts) == 1:
         # 顶点坐标需要reshape成OpenCV所需的格式
         points = np.array(pts[0], np.int32).reshape((-1, 2))
         # 画四边形
         cv2.polylines(image, [points], isClosed=True,
-                      color=(
-                          random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
+                      color=color,
                       thickness=2)
     elif len(pts) == 4 and isinstance(pts[0], list) and len(pts[0]) == 2:
         points = np.array(pts, np.int32).reshape((4, 2))
         # 画四边形
         cv2.polylines(image, [points], isClosed=True,
-                      color=(
-                          random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255),
+                      color=color,
                       thickness=2)
     else:
         # 定义矩形的左上角和右下角坐标

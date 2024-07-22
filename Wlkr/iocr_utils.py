@@ -65,13 +65,15 @@ class PointType(Enum):
     WrapPoint = 6
 
 
-def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5):
+def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5,
+                   compare_method=None):
     """
     按照左上角的坐标排序文本区域
     :param region_list:
     :param region_key_name:
     :param pt:
-    :param threshold: 角度阈值，用于判断是否换行
+    :param threshold: 角度(像素)阈值，用于判断是否换行
+    :param compare_method: 比较角度(theta)还是像素(px)
     :return: 排序后的文本区域矩阵，一个二维列表
     """
     if not region_list or len(region_list) == 0:
@@ -79,23 +81,16 @@ def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5):
     # y轴排序
     y_sort = sorted(region_list, key=lambda x: get_point(x, region_key_name, pt)[0])
     y_sort = sorted(y_sort, key=lambda x: get_point(x, region_key_name, pt)[1])
-    # print(y_sort)
+    #print(y_sort)
     # 分行
     matrix = []
     line = [y_sort[0]]
     for i in range(1, len(y_sort)):
-        p1 = get_point(y_sort[i], region_key_name, pt)
-        # 此参照物更适合像素作为阈值，因为倾斜像素阈值会被放大
-        # p2 = get_point(y_sort[i - 1], region_key_name, pt)
-        # 角度按理不会被放大，故适合取行首
-        p2 = get_point(line[0], region_key_name, pt)
-        theta = calc_theta_abs(p1, p2)
-        # print("#" * 10)
-        # print(p1)
-        # print(p2)
-        # print(theta)
-        # print("#" * 10)
-        if theta > threshold:
+        if compare_method == "px":
+            flag = compare_by_px(y_sort, i, line, region_key_name, pt, threshold)
+        else:
+            flag = compare_by_theta(y_sort, i, line, region_key_name, pt, threshold)
+        if flag:
             matrix.append(line)
             line = [y_sort[i]]
         else:
@@ -106,6 +101,32 @@ def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5):
         x_sort.sort(key=lambda x: get_point(x, region_key_name, pt)[0])
     # print(matrix)
     return matrix
+
+
+def compare_by_px(y_sort, i, line, region_key_name, pt: PointType, threshold=15):
+    p1 = get_point(y_sort[i], region_key_name, pt)
+    # 此参照物更适合像素作为阈值，因为倾斜像素阈值会被放大
+    p2 = get_point(y_sort[i - 1], region_key_name, pt)
+    dif_len = abs(p1[1] - p2[1])
+    # print("#" * 10)
+    # print(p1)
+    # print(p2)
+    # print(dif_len)
+    # print("#" * 10)
+    return dif_len > threshold
+
+
+def compare_by_theta(y_sort, i, line, region_key_name, pt: PointType, threshold=15):
+    p1 = get_point(y_sort[i], region_key_name, pt)
+    # 角度按理不会被放大，故适合取行首
+    p2 = get_point(line[0], region_key_name, pt)
+    theta = calc_theta_abs(p1, p2)
+    # print("#" * 10)
+    # print(p1)
+    # print(p2)
+    # print(theta)
+    # print("#" * 10)
+    return theta > threshold
 
 
 def get_point(x, region_key_name, pt):

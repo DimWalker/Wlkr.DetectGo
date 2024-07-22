@@ -9,6 +9,7 @@ from numpy import ndarray
 
 from Wlkr.Common.FileUtils import GetFileNameSplit
 from Wlkr.iocr_utils import point_in_region, calc_warp_point, sort_region_by, PointType
+from dataset_utils.B002_combine_scene import draw_region
 from dataset_utils_rec.A001_warp_back import calc_anchor_point
 from yolo_utils.yolov8_utils import YOLOv8, find_images_in_folder
 
@@ -22,25 +23,25 @@ class Go_Detector():
 
     def __init__(self):
         self.model_o_c = YOLOv8("../yolov8n_o_c/runs/detect/train4/weights/best.pt")
-        self.model_bwn = YOLOv8("../yolov8l_bwn/runs/detect/train4/weights/best.pt")
+        # self.model_bwn = YOLOv8("../yolov8l_bwn/runs/detect/train4/weights/best.pt")
+        self.model_ocbwn = YOLOv8("../yolov8s_ocbwn/runs/detect/train2/weights/best.pt")
         self.output_dir = "../output/Go_Detector"
-        self.qi_max_det = 400
-        self.qi_conf = 0.75
+        self.qi_max_det = 450  # yolov8 默认300个目标
+        # self.qi_conf = 0.25  # yolov8 默认值
         self.skip_save = False
-        # self.threshold_qi = {
-        #     "black": 0.8,
-        #     "white": 0.8,
-        #     "empty": 0.6,
-        # }
+        self.src_pts_offset_len = 35
+        self.compare_by_px_threshold = 10
 
     def execute(self, image_path):
         board_objects = self.detect_o_c(image_path)
         board_objects = self.calc_board_warp_back(board_objects)
         board_objects, warped_img_list = self.crop_board_warp_back(board_objects, image_path)
-        board_objects = self.detect_bwn(board_objects, warped_img_list, image_path)
+        board_objects = self.detect_ocbwn(board_objects, warped_img_list, image_path)
         board_objects = self.qi_regions_to_diagram(board_objects)
-        self.print_diagram(board_objects)
-        self.dump_result(board_objects, image_path)
+        if not self.skip_save:
+            self.print_diagram(board_objects)
+            self.dump_result(board_objects, image_path)
+            self.draw_qi_region(board_objects, warped_img_list, image_path)
         return board_objects
 
     def detect_o_c(self, image_path):
@@ -50,6 +51,12 @@ class Go_Detector():
         # v8格式转v5格式
         json_obj = []
         boxes = result[0].boxes
+
+        if not self.skip_save:
+            bn, pre, ext = GetFileNameSplit(image_path)
+            result[0].save(filename=f"{self.output_dir}/{pre}_oc{ext}"
+                           , conf=True, labels=True, show_name=None)
+
         for idx in range(len(boxes)):
             json_obj.append({
                 "cls": int(boxes.cls[idx]),
@@ -74,6 +81,10 @@ class Go_Detector():
                                    [(corner["xmin"] + corner["xmax"]) / 2,
                                     (corner["ymin"] + corner["ymax"]) / 2]):
                     board["corners"].append(corner)
+
+            # 其他信息
+            board["width"] = result[0].orig_shape[1]
+            board["height"] = result[0].orig_shape[0]
         return board_objects
 
     def calc_board_warp_back(self, board_objects):
@@ -85,12 +96,20 @@ class Go_Detector():
                 src_pts = [[of_len, of_len], [wb_len + of_len, of_len],
                            [wb_len + of_len, wb_len + of_len], [of_len, wb_len + of_len]]
 
+                # 应该用原图的宽高
+                # dst_pts = [
+                #     calc_anchor_point(src_pts[0], corners),
+                #     calc_anchor_point(src_pts[1], corners),
+                #     calc_anchor_point(src_pts[2], corners),
+                #     calc_anchor_point(src_pts[3], corners)
+                # ]
                 dst_pts = [
-                    calc_anchor_point(src_pts[0], corners),
-                    calc_anchor_point(src_pts[1], corners),
-                    calc_anchor_point(src_pts[2], corners),
-                    calc_anchor_point(src_pts[3], corners)
+                    calc_anchor_point([0, 0], corners),
+                    calc_anchor_point([board["width"], 0], corners),
+                    calc_anchor_point([board["width"], board["height"]], corners),
+                    calc_anchor_point([0, board["height"]], corners)
                 ]
+
                 M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
                 board["M"] = M
                 lt = calc_warp_point([board["xmin"], board["ymin"]], M)
@@ -126,16 +145,16 @@ class Go_Detector():
                 warped_img_list.append(None)
         return board_objects, warped_img_list
 
-    def detect_bwn(self, board_objects, warped_img_list, image_path):
+    def detect_ocbwn(self, board_objects, warped_img_list, image_path):
         # todo : 再找一次棋盘
         bn, pre, ext = GetFileNameSplit(image_path)
         for idx_b, board in enumerate(board_objects):
             if warped_img_list[idx_b] is not None:
-                result = self.model_bwn(warped_img_list[idx_b], max_det=400)
+                result = self.model_ocbwn(warped_img_list[idx_b], max_det=self.qi_max_det)
                 json_obj = []
                 boxes = result[0].boxes
                 for idx in range(len(boxes)):
-                    qi_obj = {
+                    label_obj = {
                         "cls": int(boxes.cls[idx]),
                         "conf": float(boxes.conf[idx]),
                         "name": result[0].names[int(boxes.cls[idx])],
@@ -144,22 +163,58 @@ class Go_Detector():
                         "ymin": float(boxes.xyxy[idx][1]),
                         "ymax": float(boxes.xyxy[idx][3])
                     }
-                    qi_obj["region"] = [[qi_obj["xmin"], qi_obj["ymin"]],
-                                        [qi_obj["xmax"], qi_obj["ymin"]],
-                                        [qi_obj["xmax"], qi_obj["ymax"]],
-                                        [qi_obj["xmin"], qi_obj["ymax"]]]
-                    json_obj.append(qi_obj)
-
-                qi_regions = sort_region_by(json_obj, "region", PointType.Center, 3)
+                    label_obj["region"] = [[label_obj["xmin"], label_obj["ymin"]],
+                                           [label_obj["xmax"], label_obj["ymin"]],
+                                           [label_obj["xmax"], label_obj["ymax"]],
+                                           [label_obj["xmin"], label_obj["ymax"]]]
+                    json_obj.append(label_obj)
+                # 改为ocbwn 5种标签
+                # board中还有src_pts，但是不是corner的边缘点，而是中央点，可以试试30扩大像素的效果
+                # 目前 src_pts > 4 corner > board > image_hw
+                subcorners = [o for o in json_obj if o["name"] == "corner"]
+                subboard = [o for o in json_obj if o["name"] == "board"]
+                h, w, c = warped_img_list[idx_b].shape
+                if "src_pts" in board:
+                    board_region = [
+                        [board["src_pts"][0][0] - self.src_pts_offset_len,
+                         board["src_pts"][0][1] - self.src_pts_offset_len],
+                        [board["src_pts"][1][0] + self.src_pts_offset_len,
+                         board["src_pts"][1][1] - self.src_pts_offset_len],
+                        [board["src_pts"][2][0] + self.src_pts_offset_len,
+                         board["src_pts"][2][1] + self.src_pts_offset_len],
+                        [board["src_pts"][3][0] - self.src_pts_offset_len,
+                         board["src_pts"][3][1] + self.src_pts_offset_len]
+                    ]
+                    print("use board.src_pts")
+                elif len(subcorners) == 4:
+                    dst_pts = [
+                        calc_anchor_point([0, 0], subcorners),
+                        calc_anchor_point([w, 0], subcorners),
+                        calc_anchor_point([w, h], subcorners),
+                        calc_anchor_point([0, h], subcorners)
+                    ]
+                    board_region = dst_pts
+                    print("use corners")
+                elif len(subboard) == 1:
+                    board_region = [[subboard[0]["xmin"], subboard[0]["ymin"]],
+                                    [subboard[0]["xmax"], subboard[0]["ymin"]],
+                                    [subboard[0]["xmax"], subboard[0]["ymax"]],
+                                    [subboard[0]["xmin"], subboard[0]["ymax"]]]
+                    print("use board")
+                else:
+                    board_region = [[0, 0], [w, 0], [w, h], [0, h]]
+                    print("use image_hw")
+                qi_obj = [q for q in json_obj if q["name"] in ["black", "white", "empty"]
+                          and point_in_region(board_region,
+                                              [(q["xmin"] + q["xmax"]) / 2, (q["ymin"] + q["ymax"]) / 2])]
+                qi_regions = sort_region_by(qi_obj, "region", PointType.Center, self.compare_by_px_threshold, "px")
                 board["qi_regions"] = qi_regions
-
                 if not self.skip_save:
                     # now = datetime.now()
                     # formatted_time = now.strftime('%Y%m%d%H%M%S%f')
-                    cv2.imwrite(f"{self.output_dir}/{pre}_{idx_b}_warp.{ext}", warped_img_list[idx_b])
-                    result[0].save(filename=f"{self.output_dir}/{pre}_{idx_b}__det.{ext}"
+                    cv2.imwrite(f"{self.output_dir}/{pre}_{idx_b}_warp{ext}", warped_img_list[idx_b])
+                    result[0].save(filename=f"{self.output_dir}/{pre}_{idx_b}_det{ext}"
                                    , conf=True, labels=True, show_name=None)  # save to disk
-
         return board_objects
 
     def qi_regions_to_diagram(self, board_objects):
@@ -193,7 +248,31 @@ class Go_Detector():
                 board["M"] = board["M"].tolist()
             json_path = os.path.join(self.output_dir, f"{pre}_{idx}.json")
             with open(json_path, mode="w", encoding="utf-8") as f:
-                json.dump(board_objects, f)
+                json.dump(board, f)
+
+    def draw_qi_region(self, board_objects, warped_img_list, image_path):
+        bn, pre, ext = GetFileNameSplit(image_path)
+        for idx, board in enumerate(board_objects):
+            if "M" not in board:
+                continue
+            img = warped_img_list[idx].copy()
+            for row in board["qi_regions"]:
+                for cell in row:
+                    if cell["name"] == "black":
+                        color = (0, 0, 0)
+                    elif cell["name"] == "white":
+                        color = (255, 255, 255)
+                    elif cell["name"] == "empty":
+                        color = (0, 0, 255)
+
+                    draw_region(img, cell["region"], color)
+            draw_region(img, [
+                [board["src_pts"][0][0] - self.src_pts_offset_len, board["src_pts"][0][1] - self.src_pts_offset_len],
+                [board["src_pts"][1][0] + self.src_pts_offset_len, board["src_pts"][1][1] - self.src_pts_offset_len],
+                [board["src_pts"][2][0] + self.src_pts_offset_len, board["src_pts"][2][1] + self.src_pts_offset_len],
+                [board["src_pts"][3][0] - self.src_pts_offset_len, board["src_pts"][3][1] + self.src_pts_offset_len]
+            ], (0, 255, 0))
+            cv2.imwrite(f"{self.output_dir}/{pre}_{idx}_dia{ext}", img)
 
     # def board_warp_back(self, image_path, skip_save=None):
     #     """
@@ -284,11 +363,13 @@ class Go_Detector():
 
 
 if __name__ == "__main__":
+    gd = Go_Detector()
     # img_path = r"F:\Project_Private\Wlkr.DetectGo\output\go_board_dataset_all\eval\static_street_cambridge_outdoor_july_2005__img_2722.jpg"
     # img_path = r"F:\Project_Private\Wlkr.DetectGo\output\go_board_dataset_all\eval\static_street_outdoor_palma_mallorca_spain__IMG_0413.jpg"
-    image_path_list = find_images_in_folder("F:\Project_Private\Wlkr.DetectGo\output\go_board_dataset_all\eval")
-    gd = Go_Detector()
+    # image_path_list = find_images_in_folder(r"F:\Project_Private\Wlkr.DetectGo\output\go_board_dataset_all\eval")
+    # for image_path in image_path_list:
+    #     board_objects = gd.execute(image_path)
+
+    image_path_list = find_images_in_folder(r"F:\Project_Private\Wlkr.DetectGo\output\test")
     for image_path in image_path_list:
         board_objects = gd.execute(image_path)
-
-    pass
