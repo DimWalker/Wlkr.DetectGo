@@ -13,7 +13,8 @@ from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils.B000_combine_board import load_diagram
 from dataset_utils.B002_combine_scene import draw_region
 
-tmp_disable_factor = 19
+# 增大正常矩形的比例，以应对游戏场景
+tmp_disable_factor = 2
 factor_cnt = 0
 lock_factor_cnt = threading.Lock()
 
