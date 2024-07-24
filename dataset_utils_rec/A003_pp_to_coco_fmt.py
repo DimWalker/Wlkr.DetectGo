@@ -131,34 +131,34 @@ def split_dataset(label_type="bwn"):
 
 if __name__ == "__main__":
     pass
-    # categories_list_ocbwn = [
-    #     {
-    #         "id": 1,
-    #         "name": "board",
-    #         "supercategory": "board"
-    #     },
-    #     {
-    #         "id": 2,
-    #         "name": "corner",
-    #         "supercategory": "board"
-    #     },
-    #     {
-    #         "id": 3,
-    #         "name": "black",
-    #         "supercategory": "piece"
-    #     },
-    #     {
-    #         "id": 4,
-    #         "name": "white",
-    #         "supercategory": "piece"
-    #     },
-    #     {
-    #         "id": 5,
-    #         "name": "empty",
-    #         "supercategory": "piece"
-    #     },
-    # ]
-    # pplabel_2_coco(categories_list_ocbwn)
+    categories_list_ocbwn = [
+        {
+            "id": 1,
+            "name": "board",
+            "supercategory": "board"
+        },
+        {
+            "id": 2,
+            "name": "corner",
+            "supercategory": "board"
+        },
+        {
+            "id": 3,
+            "name": "black",
+            "supercategory": "piece"
+        },
+        {
+            "id": 4,
+            "name": "white",
+            "supercategory": "piece"
+        },
+        {
+            "id": 5,
+            "name": "empty",
+            "supercategory": "piece"
+        },
+    ]
+    pplabel_2_coco(categories_list_ocbwn)
 
-    # coco_to_yolo("ocbwn")
+    coco_to_yolo("ocbwn")
     split_dataset("ocbwn")
