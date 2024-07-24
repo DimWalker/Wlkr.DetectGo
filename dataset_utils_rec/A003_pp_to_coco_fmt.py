@@ -2,10 +2,14 @@ import json
 import logging
 import os
 import shutil
-from datetime import datetime
-
 import cv2
+import sys
 
+# 跟目录，兼容linux
+code_root_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, code_root_path)
+
+from datetime import datetime
 from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils.B002_combine_scene_board import get_next_image_info_id, cale_ppt_from_region, find_category_id, \
     get_next_annotation_info_id, info, licenses_list

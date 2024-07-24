@@ -1,10 +1,15 @@
 import json
 import os.path
 import shutil
-from copy import deepcopy
-
 import cv2
 import numpy as np
+import sys
+
+# 跟目录，兼容linux
+code_root_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, code_root_path)
+
+from copy import deepcopy
 from Wlkr.Common.FileUtils import GetFileNameSplit
 from Wlkr.iocr_utils import calc_distance
 from dataset_utils.B001_transform_diagram import calc_warp_point
