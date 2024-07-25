@@ -26,6 +26,7 @@ class Go_Detector():
         # self.model_bwn = YOLOv8("../yolov8l_bwn/runs/detect/train4/weights/best.pt")
         self.model_ocbwn = YOLOv8("../yolov8s_ocbwn/runs/detect/train2/weights/best.pt")
         self.output_dir = "../output/Go_Detector"
+        self.iou = 0.1  # NMS 的 "相交大于结合"（IoU）阈值，默认0.7
         self.qi_max_det = 450  # yolov8 默认300个目标
         # self.qi_conf = 0.25  # yolov8 默认值
         self.skip_save = False
@@ -47,7 +48,7 @@ class Go_Detector():
     def detect_o_c(self, image_path):
         logging.info("detect_o_c " + image_path)
 
-        result = self.model_o_c(image_path)
+        result = self.model_o_c(image_path, iou=self.iou)
         # v8格式转v5格式
         json_obj = []
         boxes = result[0].boxes
@@ -150,7 +151,7 @@ class Go_Detector():
         bn, pre, ext = GetFileNameSplit(image_path)
         for idx_b, board in enumerate(board_objects):
             if warped_img_list[idx_b] is not None:
-                result = self.model_ocbwn(warped_img_list[idx_b], max_det=self.qi_max_det)
+                result = self.model_ocbwn(warped_img_list[idx_b], max_det=self.qi_max_det, iou=self.iou)
                 json_obj = []
                 boxes = result[0].boxes
                 for idx in range(len(boxes)):
@@ -370,6 +371,6 @@ if __name__ == "__main__":
     # for image_path in image_path_list:
     #     board_objects = gd.execute(image_path)
 
-    image_path_list = find_images_in_folder(r"F:\Project_Private\Wlkr.DetectGo\output\test")
+    image_path_list = find_images_in_folder(r"F:\Project_Private\Wlkr.DetectGo\output\test_case")
     for image_path in image_path_list:
         board_objects = gd.execute(image_path)
