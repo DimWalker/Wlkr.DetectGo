@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import os
 from datetime import datetime
 
@@ -32,6 +33,7 @@ class Go_Detector():
         self.skip_save = False
         self.src_pts_offset_len = 35
         self.compare_by_px_threshold = 10
+        self.fix_qi_regions_threshold = 0.1
 
     def execute(self, image_path):
         board_objects = self.detect_o_c(image_path)
@@ -49,43 +51,24 @@ class Go_Detector():
         logging.info("detect_o_c " + image_path)
 
         result = self.model_o_c(image_path, iou=self.iou)
-        # v8格式转v5格式
-        json_obj = []
-        boxes = result[0].boxes
-
         if not self.skip_save:
             bn, pre, ext = GetFileNameSplit(image_path)
             result[0].save(filename=f"{self.output_dir}/{pre}_oc{ext}"
                            , conf=True, labels=True, show_name=None)
-
-        for idx in range(len(boxes)):
-            json_obj.append({
-                "cls": int(boxes.cls[idx]),
-                "conf": float(boxes.conf[idx]),
-                "name": result[0].names[int(boxes.cls[idx])],
-                "xmin": float(boxes.xyxy[idx][0]),
-                "xmax": float(boxes.xyxy[idx][2]),
-                "ymin": float(boxes.xyxy[idx][1]),
-                "ymax": float(boxes.xyxy[idx][3])
-            })
+        # v8格式转v5格式
+        json_obj = self.model_o_c.result_to_regions(result[0])
 
         board_objects = [x for x in json_obj if x["name"] == "board"]
         corner_objects = [x for x in json_obj if x["name"] == "corner"]
         for board in board_objects:
             board["corners"] = []
-            board_region = [[board["xmin"], board["ymin"]],
-                            [board["xmax"], board["ymin"]],
-                            [board["xmax"], board["ymax"]],
-                            [board["xmin"], board["ymax"]]]
             for corner in corner_objects:
-                if point_in_region(board_region,
-                                   [(corner["xmin"] + corner["xmax"]) / 2,
-                                    (corner["ymin"] + corner["ymax"]) / 2]):
+                if point_in_region(board["region"], corner["center"]):
                     board["corners"].append(corner)
 
             # 其他信息
-            board["width"] = result[0].orig_shape[1]
-            board["height"] = result[0].orig_shape[0]
+            board["img_w"] = result[0].orig_shape[1]
+            board["img_h"] = result[0].orig_shape[0]
         return board_objects
 
     def calc_board_warp_back(self, board_objects):
@@ -106,9 +89,9 @@ class Go_Detector():
                 # ]
                 dst_pts = [
                     calc_anchor_point([0, 0], corners),
-                    calc_anchor_point([board["width"], 0], corners),
-                    calc_anchor_point([board["width"], board["height"]], corners),
-                    calc_anchor_point([0, board["height"]], corners)
+                    calc_anchor_point([board["img_w"], 0], corners),
+                    calc_anchor_point([board["img_w"], board["img_h"]], corners),
+                    calc_anchor_point([0, board["img_h"]], corners)
                 ]
 
                 M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
@@ -147,28 +130,12 @@ class Go_Detector():
         return board_objects, warped_img_list
 
     def detect_ocbwn(self, board_objects, warped_img_list, image_path):
-        # todo : 再找一次棋盘
         bn, pre, ext = GetFileNameSplit(image_path)
         for idx_b, board in enumerate(board_objects):
             if warped_img_list[idx_b] is not None:
                 result = self.model_ocbwn(warped_img_list[idx_b], max_det=self.qi_max_det, iou=self.iou)
-                json_obj = []
-                boxes = result[0].boxes
-                for idx in range(len(boxes)):
-                    label_obj = {
-                        "cls": int(boxes.cls[idx]),
-                        "conf": float(boxes.conf[idx]),
-                        "name": result[0].names[int(boxes.cls[idx])],
-                        "xmin": float(boxes.xyxy[idx][0]),
-                        "xmax": float(boxes.xyxy[idx][2]),
-                        "ymin": float(boxes.xyxy[idx][1]),
-                        "ymax": float(boxes.xyxy[idx][3])
-                    }
-                    label_obj["region"] = [[label_obj["xmin"], label_obj["ymin"]],
-                                           [label_obj["xmax"], label_obj["ymin"]],
-                                           [label_obj["xmax"], label_obj["ymax"]],
-                                           [label_obj["xmin"], label_obj["ymax"]]]
-                    json_obj.append(label_obj)
+                json_obj = self.model_o_c.result_to_regions(result[0])
+
                 # 改为ocbwn 5种标签
                 # board中还有src_pts，但是不是corner的边缘点，而是中央点，可以试试30扩大像素的效果
                 # 目前 src_pts > 4 corner > board > image_hw
@@ -186,7 +153,7 @@ class Go_Detector():
                         [board["src_pts"][3][0] - self.src_pts_offset_len,
                          board["src_pts"][3][1] + self.src_pts_offset_len]
                     ]
-                    print("use board.src_pts")
+                    logging.info("use board.src_pts")
                 elif len(subcorners) == 4:
                     dst_pts = [
                         calc_anchor_point([0, 0], subcorners),
@@ -195,21 +162,19 @@ class Go_Detector():
                         calc_anchor_point([0, h], subcorners)
                     ]
                     board_region = dst_pts
-                    print("use corners")
+                    logging.info("use corners")
                 elif len(subboard) == 1:
-                    board_region = [[subboard[0]["xmin"], subboard[0]["ymin"]],
-                                    [subboard[0]["xmax"], subboard[0]["ymin"]],
-                                    [subboard[0]["xmax"], subboard[0]["ymax"]],
-                                    [subboard[0]["xmin"], subboard[0]["ymax"]]]
-                    print("use board")
+                    board_region = subboard[0]["region"]
+                    logging.info("use board")
                 else:
                     board_region = [[0, 0], [w, 0], [w, h], [0, h]]
-                    print("use image_hw")
-                qi_obj = [q for q in json_obj if q["name"] in ["black", "white", "empty"]
-                          and point_in_region(board_region,
-                                              [(q["xmin"] + q["xmax"]) / 2, (q["ymin"] + q["ymax"]) / 2])]
-                qi_regions = sort_region_by(qi_obj, "region", PointType.Center, self.compare_by_px_threshold, "px")
-                board["qi_regions"] = qi_regions
+                    logging.info("use image_hw")
+                qi_obj_list = [q for q in json_obj if q["name"] in ["black", "white", "empty"]
+                               and point_in_region(board_region, q["center"])]
+                # 转移到qi_regions_to_diagram
+                # qi_regions = sort_region_by(qi_obj_list, "region",
+                #                             PointType.Center, self.compare_by_px_threshold, "px")
+                board["qi_regions"] = qi_obj_list
                 if not self.skip_save:
                     # now = datetime.now()
                     # formatted_time = now.strftime('%Y%m%d%H%M%S%f')
@@ -219,10 +184,16 @@ class Go_Detector():
         return board_objects
 
     def qi_regions_to_diagram(self, board_objects):
-
         for idx, board in enumerate(board_objects):
             if "qi_regions" not in board:
                 continue
+            # 这算法只能排序，无法没有填充，没有排除
+            qi_regions = sort_region_by(board["qi_regions"], "region",
+                                        PointType.Center, self.compare_by_px_threshold, "px")
+            board["qi_regions"] = qi_regions
+            # 填充及排除
+            self.fix_qi_regions(board)
+
             matrix = []
             for idx_r, row in enumerate(board["qi_regions"]):
                 matrix.append([])
@@ -231,13 +202,104 @@ class Go_Detector():
             board["diagram"] = matrix
         return board_objects
 
+    def fix_qi_regions(self, board):
+        """
+        通过推理，插值空格或删除多余项
+        :param qi_regions:
+        :return:
+        """
+        qi_regions = board["qi_regions"]
+        matrix = [[cell["center"] for cell in row] for row in qi_regions]
+        median_distance = self.calc_median_distance(matrix)
+
+        new_regions = []
+        for row in qi_regions:
+            if len(row) == 19:
+                new_regions.append(row)
+                continue
+            end_r = len(row) - 1
+            new_row = []
+            skip_flag = False
+            for idx_c, cell in enumerate(row):
+                if skip_flag:
+                    skip_flag = False
+                    continue
+                # todo:首尾的填充待验证
+                if idx_c == 0:
+                    dis = abs(cell["center"][0] - board["src_pts"][0][0])
+                    # 理论上是30像素一个格，正常第一个棋子与src_pts的距离是15像素
+                    # 实际貌似36？
+                    cnt = math.floor(dis / median_distance)
+                    while cnt > 0:
+                        new_row.append(
+                            {
+                                "cls": -1,
+                                "conf": -1,
+                                "name": "empty"
+                            }
+                        )
+                        cnt -= 1
+                    new_row.append(cell)
+                    continue
+                if idx_c == end_r:
+                    dis = abs(board["src_pts"][1][0] - cell["center"][0])
+                    new_row.append(cell)
+                    while cnt > 0:
+                        new_row.append(
+                            {
+                                "cls": -1,
+                                "conf": -1,
+                                "name": "empty"
+                            }
+                        )
+                        cnt -= 1
+                    continue
+
+                next = row[idx_c + 1]
+                dis = abs(cell["center"][0] - next["center"][0])
+                # 理论上是归一化
+                norm = dis / median_distance
+                # 接近1时，正常
+                if abs(norm - 1) < self.fix_qi_regions_threshold:
+                    new_row.append(cell)
+                    continue
+                # 接近0时，重叠
+                if norm < self.fix_qi_regions_threshold:
+                    new_row.append(cell if cell["conf"] >= next["conf"] else next)
+                    skip_flag = True
+                    continue
+                # 接近或大于2时，缺失
+                new_row.append(cell)
+                while abs(norm - 2) < self.fix_qi_regions_threshold:
+                    new_row.append(
+                        {
+                            "cls": -1,
+                            "conf": -1,
+                            "name": "empty"
+                        }
+                    )
+                    norm -= 1
+            new_regions.append(new_row)
+        board["qi_regions"] = new_regions
+
+    def calc_median_distance(self, matrix):
+        median_distance = 0
+        for row in matrix:
+            points = np.array(row)
+            # 计算相邻两点间的x轴距离
+            deltas = np.diff(points[:, 0])  # 取x坐标的差分
+            # 计算中值距离
+            median_distance += np.median(deltas)
+        median_distance = median_distance / len(matrix)
+        return median_distance
+
     def print_diagram(self, board_objects):
         for idx, board in enumerate(board_objects):
             if "diagram" in board:
                 d = ""
                 for idx_r, row in enumerate(board["diagram"]):
                     d += ",".join(row) + "\n"
-                print(f"diagram {idx}:\n" + d)
+                logging.info(f"diagram {idx}:\n" + d)
 
     def dump_result(self, board_objects, image_path):
         bn, pre, ext = GetFileNameSplit(image_path)
@@ -275,95 +337,9 @@ class Go_Detector():
             ], (0, 255, 0))
             cv2.imwrite(f"{self.output_dir}/{pre}_{idx}_dia{ext}", img)
 
-    # def board_warp_back(self, image_path, skip_save=None):
-    #     """
-    #     todo: 角度少于阈值时，不warp_back
-    #     todo: corner in board
-    #     todo: 角少于4时怎么处理
-    #     :return:
-    #     """
-    #
-    #     logging.info("board_warp_back " + image_path)
-    #     bn, pre, ext = GetFileNameSplit(image_path)
-    #     result = self.model_o_c(image_path)
-    #
-    #     # v8格式转v5格式
-    #     json_obj = []
-    #     for idx in range(len(result[0].boxes)):
-    #         boxes = result[0].boxes
-    #         json_obj.append(
-    #             {
-    #                 "cls": int(boxes.cls[idx]),
-    #                 "conf": float(boxes.conf[idx]),
-    #                 "name": result[0].names[int(boxes.cls[idx])],
-    #                 "xmin": float(boxes.xyxy[idx][0]),
-    #                 "xmax": float(boxes.xyxy[idx][2]),
-    #                 "ymin": float(boxes.xyxy[idx][1]),
-    #                 "ymax": float(boxes.xyxy[idx][3])
-    #             }
-    #         )
-    #
-    #     corners = []
-    #
-    #     for cls in json_obj:
-    #         if cls["name"] == "corner":
-    #             corners.append(cls)
-    #     img = cv2.imread(image_path)
-    #     if len(corners) == 4:
-    #         wb_len = 608
-    #         of_len = 60
-    #         src_pts = [[of_len, of_len], [wb_len + of_len, of_len],
-    #                    [wb_len + of_len, wb_len + of_len], [of_len, wb_len + of_len]]
-    #         # 四个角的region中心点，计算距离从而得出角的4个点
-    #         dst_pts = [
-    #             calc_anchor_point(src_pts[0], corners),
-    #             calc_anchor_point(src_pts[1], corners),
-    #             calc_anchor_point(src_pts[2], corners),
-    #             calc_anchor_point(src_pts[3], corners)
-    #         ]
-    #         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
-    #
-    #         new_image = img.copy()
-    #         warped_image = cv2.warpPerspective(new_image, M, (wb_len + of_len * 2, wb_len + of_len * 2),
-    #                                            borderMode=cv2.BORDER_CONSTANT,
-    #                                            borderValue=(255, 255, 255, 0))
-    #         n_h, n_w = wb_len + of_len * 2, wb_len + of_len * 2
-    #         # o_h, o_w, _ = warped_image.shape
-    #         # h, w = min(o_h, n_h), min(o_w, n_w)
-    #         new_warped_img = np.zeros((n_h, n_w, 3), dtype=np.uint8)
-    #         new_warped_img[:, :] = warped_image
-    #
-    #         save_name = None
-    #         if not skip_save:
-    #             # 保存
-    #             save_name = pre + "_wb" + ext
-    #             cv2.imwrite(os.path.join(self.output_dir, pre + "_wb" + ext), warped_image)
-    #         return M, new_warped_img, save_name
-    #     else:
-    #         print("corners != 4")
-    #         return None, None, None
-    #
-    # def qi_find(self, image_path, skip_save=None):
-    #     results = self.model_bwn(image_path, max_det=400, conf=0.8)
-    #     if not skip_save:
-    #         if not os.path.exists(self.output_dir):
-    #             os.makedirs(self.output_dir)
-    #         for result in results:
-    #             # 格式化时间输出，其中：
-    #             # yyyy 表示四位年份
-    #             # MM   表示两位月份
-    #             # dd   表示两位日期
-    #             # HH   表示两位小时（24小时制）
-    #             # mm   表示两位分钟
-    #             # ss   表示两位秒
-    #             # fffffff 表示七位微秒
-    #             now = datetime.now()
-    #             formatted_time = now.strftime('%Y%m%d%H%M%S%f')
-    #             result.save(filename=f"{self.output_dir}/{formatted_time}.jpg")  # save to disk
-    #     return results
-
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     gd = Go_Detector()
     # img_path = r"F:\Project_Private\Wlkr.DetectGo\output\go_board_dataset_all\eval\static_street_cambridge_outdoor_july_2005__img_2722.jpg"
     # img_path = r"F:\Project_Private\Wlkr.DetectGo\output\go_board_dataset_all\eval\static_street_outdoor_palma_mallorca_spain__IMG_0413.jpg"

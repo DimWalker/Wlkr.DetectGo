@@ -45,7 +45,7 @@ def val_diagram():
                 except Exception as ex:
                     err_cnt += 1
 
-    print(f"ttl_cnt: {ttl_cnt}, scc_cnt: {scc_cnt}, err_cnt: {err_cnt}")
+    logging.info(f"ttl_cnt: {ttl_cnt}, scc_cnt: {scc_cnt}, err_cnt: {err_cnt}")
 
 
 if __name__ == "__main__":

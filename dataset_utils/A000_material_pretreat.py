@@ -37,7 +37,7 @@ def resize_images(src_path, dst_path, target_size, crop=None):
             # Save the resized image
             resized_img.save(dst_path)
     except Exception as e:
-        print(f"Error processing {src_path}: {str(e)}")
+        logging.info(f"Error processing {src_path}: {str(e)}")
 
 
 def resize_dir():

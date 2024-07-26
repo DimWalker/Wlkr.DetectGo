@@ -99,7 +99,7 @@ def sort_region_by(region_list, region_key_name, pt: PointType, threshold=1.5,
     # x轴排序
     for x_sort in matrix:
         x_sort.sort(key=lambda x: get_point(x, region_key_name, pt)[0])
-    # print(matrix)
+    # logging.info(matrix)
     return matrix
 
 
@@ -108,11 +108,11 @@ def compare_by_px(y_sort, i, line, region_key_name, pt: PointType, threshold=15)
     # 此参照物更适合像素作为阈值，因为倾斜像素阈值会被放大
     p2 = get_point(y_sort[i - 1], region_key_name, pt)
     dif_len = abs(p1[1] - p2[1])
-    # print("#" * 10)
-    # print(p1)
-    # print(p2)
-    # print(dif_len)
-    # print("#" * 10)
+    # logging.info("#" * 10)
+    # logging.info(p1)
+    # logging.info(p2)
+    # logging.info(dif_len)
+    # logging.info("#" * 10)
     return dif_len > threshold
 
 
@@ -121,11 +121,11 @@ def compare_by_theta(y_sort, i, line, region_key_name, pt: PointType, threshold=
     # 角度按理不会被放大，故适合取行首
     p2 = get_point(line[0], region_key_name, pt)
     theta = calc_theta_abs(p1, p2)
-    # print("#" * 10)
-    # print(p1)
-    # print(p2)
-    # print(theta)
-    # print("#" * 10)
+    # logging.info("#" * 10)
+    # logging.info(p1)
+    # logging.info(p2)
+    # logging.info(theta)
+    # logging.info("#" * 10)
     return theta > threshold
 
 

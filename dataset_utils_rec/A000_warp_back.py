@@ -108,7 +108,7 @@ def warp_back():
             res_list.append(f"{pre_dir_name}/{save_name}\t{line}\n")
             stat_list.append(f"{abs_dir}\\{save_name}\t1\n")
         else:
-            print("line is None.")
+            logging.info("line is None.")
 
         cnt += 1
         if cnt > cnt_limit:
@@ -143,7 +143,7 @@ def warp_back_straight(cnt_limit, skip_cnt):
         if skip_cnt and cnt <= skip_cnt:
             cnt += 1
             continue
-        print("warp_back straight " + img_path)
+        logging.info("warp_back straight " + img_path)
         bn, _, _ = GetFileNameSplit(img_path)
         img_path = os.path.join(raw_dir, img_path)
         save_path = os.path.join(output_dir, bn)
@@ -153,7 +153,7 @@ def warp_back_straight(cnt_limit, skip_cnt):
             res_list.append(f"{pre_dir_name}/{bn}\t{line}\n")
             stat_list.append(f"{abs_dir}\\{bn}\t1\n")
         else:
-            print("line is None.")
+            logging.info("line is None.")
 
         cnt += 1
         if cnt > cnt_limit:
@@ -173,7 +173,7 @@ def warp_back_straight(cnt_limit, skip_cnt):
 
 
 def board_warp_back(image_path, output_dir, skip_save=None):
-    print("warp_back " + image_path)
+    logging.info("warp_back " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model(image_path)
 
@@ -250,7 +250,7 @@ def board_warp_back(image_path, output_dir, skip_save=None):
             cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
         return M, save_name
     else:
-        print("corners len: " + str(len(corners)))
+        logging.info("corners len: " + str(len(corners)))
         return None, None
 
 

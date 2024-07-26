@@ -34,7 +34,7 @@ from dataset_utils.A001_find_go_board_grid import save_middle_mat, reset_dir
 #     num_points = 8
 #     points = np.linspace(0, len(approx) - 1, num_points, dtype=int)
 #     sampled_points = approx[points]
-#     print(sampled_points)
+#     logging.info(sampled_points)
 #
 #     # 将16个点连接起来
 #     sampled_points = sampled_points.reshape((-1, 1, 2))

@@ -285,7 +285,7 @@ def do_warp():
         bn, pre, ext = GetFileNameSplit(dia_path)
         if not dia_path.endswith(".png"):
             continue
-        print("warping " + dia_path)
+        logging.info("warping " + dia_path)
         board_image = cv2.imread(dia_path, cv2.IMREAD_UNCHANGED)
         transformed_image, M, factor, zoom, dst_pts = random_perspective_transform(board_image, factor=100)
         save_path = os.path.join(output_dir, bn)
@@ -309,6 +309,6 @@ if __name__ == "__main__":
     # tmp_disable_factor = 1
     # try_to_warp()
     # arr = np.array([1, 1])
-    # print(arr * 2)
+    # logging.info(arr * 2)
     do_warp()
     # draw_all_warp()

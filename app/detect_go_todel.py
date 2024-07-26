@@ -18,7 +18,7 @@ def board_warp_back(image_path, skip_save=None):
     :return:
     """
 
-    print("warp_back " + image_path)
+    logging.info("warp_back " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model_bc(image_path)
 
@@ -78,12 +78,12 @@ def board_warp_back(image_path, skip_save=None):
         cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
         return M, save_name
     else:
-        print("corners < 4")
+        logging.info("corners < 4")
         return None, None
 
 
 def board_split_row(image_path, threshole= 0.75,skip_save=None):
-    print("split row " + image_path)
+    logging.info("split row " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model_r(image_path)
     json_obj = result.pandas().xyxy[0].to_json(orient='records')
@@ -98,7 +98,7 @@ def board_split_row(image_path, threshole= 0.75,skip_save=None):
     rows = []
     for cls in json_obj:
         if cls["confidence"] < threshole:
-            print(f'{cls["confidence"]} < {threshole}')
+            logging.info(f'{cls["confidence"]} < {threshole}')
             continue
         min_x, max_x, min_y, max_y = int(cls["xmin"]), int(cls["xmax"]), \
                                      int(cls["ymin"]), int(cls["ymax"])
@@ -114,7 +114,7 @@ def row_rec(rows):
     res_list = []
     for cls, img_path in rows:
         res = ocr.ocr(img_path, det=False, cls=False)
-        # print(res)
+        # logging.info(res)
         res_list.append(res)
     return res_list
 

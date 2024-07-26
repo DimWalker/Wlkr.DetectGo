@@ -30,7 +30,7 @@ def pplabel_2_coco(categories_list):
     ann_list = []
     for line in lines:
         file_name, json_obj = line.rstrip().split("\t")
-        print("handing " + file_name)
+        logging.info("handing " + file_name)
         bn, pre, ext = GetFileNameSplit(file_name)
         json_obj = json.loads(json_obj)
         # 获取当前日期和时间

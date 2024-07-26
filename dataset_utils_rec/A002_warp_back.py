@@ -216,7 +216,7 @@ def warp_back(output_dir, dataset_name, pre_dir_name, raw_dir, cate_name_list: l
             res_list.append(f"{pre_dir_name}/{save_name}\t{line}\n")
             stat_list.append(f"{abs_dir}\\{save_name}\t1\n")
         else:
-            print("line is None.")
+            logging.info("line is None.")
     with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
         f.writelines(res_list)
     with open(os.path.join(output_dir, "fileState.txt"), "w", encoding="utf-8") as f:
@@ -256,7 +256,7 @@ def warp_back_straight(output_dir, raw_dir, cate_name_list: list):
             res_list.append(f"warp_back_straight/{save_name}\t{line}\n")
             stat_list.append(f"{abs_dir}\\{save_name}\t1\n")
         else:
-            print("line is None.")
+            logging.info("line is None.")
     with open(os.path.join(output_dir, "Label.txt"), "w", encoding="utf-8") as f:
         f.writelines(res_list)
     with open(os.path.join(output_dir, "fileState.txt"), "w", encoding="utf-8") as f:
@@ -264,7 +264,7 @@ def warp_back_straight(output_dir, raw_dir, cate_name_list: list):
 
 
 def board_warp_back(image_path, output_dir, skip_save=None):
-    print("warp_back " + image_path)
+    logging.info("warp_back " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model(image_path)
 
@@ -341,12 +341,12 @@ def board_warp_back(image_path, output_dir, skip_save=None):
             cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
         return M, save_name
     else:
-        print("corners len: " + str(len(corners)))
+        logging.info("corners len: " + str(len(corners)))
         return None, None
 
 
 def board_warp_back_straight(image_path, output_dir, skip_save=None):
-    print("board_warp_back_straight " + image_path)
+    logging.info("board_warp_back_straight " + image_path)
     with open(image_path + ".json", "r", encoding="utf-8") as f:
         json_obj = json.load(f)
     wb_len = 608

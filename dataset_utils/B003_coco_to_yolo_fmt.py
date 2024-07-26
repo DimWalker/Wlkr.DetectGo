@@ -47,10 +47,10 @@ def convert(size, box):
 
 
 def coco_to_yolo_fmt(ds_path, save_path, coco_json_name, coco_label_name):
-    print(ds_path)
-    print(save_path)
-    print(coco_json_name)
-    print(coco_label_name)
+    logging.info(ds_path)
+    logging.info(save_path)
+    logging.info(coco_json_name)
+    logging.info(coco_label_name)
     arg = build_agr(ds_path, save_path, coco_json_name, coco_label_name)
     json_file = arg.json_path  # COCO Object Instance 类型的标注
     ana_txt_save_path = arg.save_path  # 保存的路径
@@ -65,7 +65,7 @@ def coco_to_yolo_fmt(ds_path, save_path, coco_json_name, coco_label_name):
         for i, category in enumerate(data['categories']):
             f.write(f"{category['name']}\n")
             id_map[category['id']] = i
-    # print(id_map)
+    # logging.info(id_map)
     # 这里需要根据自己的需要，更改写入图像相对路径的文件位置。
     list_file = open(os.path.join(ana_txt_save_path, arg.coco_label_name), 'w')
     for img in tqdm(data['images']):

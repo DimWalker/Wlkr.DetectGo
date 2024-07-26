@@ -30,6 +30,32 @@ class YOLOv8:
         results = self.model.predict(img_path, **kwargs)
         return results
 
+    def result_to_regions(self, result):
+        """
+        将Yolov8结果，转换为自定义的json格式
+        :param result: 单个结果，如batch_size是1时，即results[0]
+        :return:
+        """
+        json_obj = []
+        boxes = result.boxes
+        for idx in range(len(boxes)):
+            o = {
+                "cls": int(boxes.cls[idx]),
+                "conf": float(boxes.conf[idx]),
+                "name": result.names[int(boxes.cls[idx])],
+                "xmin": float(boxes.xyxy[idx][0]),
+                "xmax": float(boxes.xyxy[idx][2]),
+                "ymin": float(boxes.xyxy[idx][1]),
+                "ymax": float(boxes.xyxy[idx][3])
+            }
+            o["region"] = [[o["xmin"], o["ymin"]],
+                           [o["xmax"], o["ymin"]],
+                           [o["xmax"], o["ymax"]],
+                           [o["xmin"], o["ymax"]]]
+            o["center"] = [(o["xmin"] + o["xmax"]) / 2, (o["ymin"] + o["ymax"]) / 2]
+            json_obj.append(o)
+        return json_obj
+
 
 def o_c_test():
     output_dir = "results_o_c"

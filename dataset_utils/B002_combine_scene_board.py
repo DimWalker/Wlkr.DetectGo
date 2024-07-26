@@ -254,7 +254,7 @@ def do_coco_dataset(dataset_name, dataset_type, categories_list, categories_name
     for scene in scene_list:
         if not scene.endswith(".jpg"):
             continue
-        print("scene: " + scene)
+        logging.info("scene: " + scene)
         scene_path = os.path.join(scene_dir, scene)
         dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
         jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
@@ -286,8 +286,8 @@ def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_
     :return:
     """
     output_dir = "../output/" + dataset_name + "/" + dataset_type
-    print(output_dir)
-    print(categories_name_sub)
+    logging.info(output_dir)
+    logging.info(categories_name_sub)
     with open(os.path.join(output_dir, 'coco_data_all.json'), 'r', encoding="utf-8") as json_file:
         json_obj = json.loads(json_file.read())
     id_list = []
