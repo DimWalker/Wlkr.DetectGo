@@ -1,3 +1,7 @@
+"""
+找去棋盘上的点，确认下子位置
+"""
+
 import json
 import math
 import os
@@ -37,7 +41,7 @@ def save_middle_mat(img, name):
 def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
                           , crop_px=None, brightness=None
                           , bg_offset=None):
-    print(image_path)
+    logging.info(image_path)
     # 读取图像
     img = cv2.imread(image_path)
     height, width = img.shape[:2]
@@ -144,8 +148,8 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
     center_points = sorted(center_points, key=lambda x: x[1])
     points_count = len(center_points)
     # 输出中心点坐标
-    print("center_points:", center_points)
-    print("points_count: " + str(points_count))
+    logging.info("center_points:", center_points)
+    logging.info("points_count: " + str(points_count))
 
     if points_count != 361:
         raise Exception("交点数目错误，19线棋盘应为361点: " + image_path)
@@ -173,7 +177,7 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
         line_ttl += calc_distance(row[0], row[-1])
         # 候选：int、round、math.ceil
     avg_line_len = int(line_ttl / len(matrix) / len(matrix[0]))
-    print("avg_line_len: " + str(avg_line_len))
+    logging.info("avg_line_len: " + str(avg_line_len))
 
     # 裁剪补正
     if crop_px and isinstance(crop_px, int):
@@ -186,7 +190,7 @@ def find_go_board_squares(image_path, bin_threshold=160, diff_threshold=5
                 matrix[r][c] = (cell[0] + crop_px[0], cell[1] + crop_px[1])
 
     for row in matrix:
-        print('1,' * len(row))
+        logging.info('1,' * len(row))
     # 保存棋盘数据
     if bg_offset is not None:
         min_x, max_x, min_y, max_y = bg_offset[0], width - bg_offset[2], \

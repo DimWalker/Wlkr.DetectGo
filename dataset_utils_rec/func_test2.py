@@ -39,7 +39,7 @@ def calc_anchor_point(src_pt, corners):
 def board_warp_back(image_path, output_dir):
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model(image_path)
-    print(result)
+    logging.info(result)
     json_obj = result.pandas().xyxy[0].to_json(orient='records')
     json_obj = json.loads(json_obj)
 
@@ -90,7 +90,7 @@ def board_warp_back(image_path, output_dir):
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
     else:
-        print("corners < 4")
+        logging.info("corners < 4")
 
 
 def show_all():

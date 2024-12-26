@@ -1,4 +1,9 @@
-# 读取 JPG 图像
+"""
+场景合成，制作数据集
+"""
+
+
+
 import json
 import os.path
 import random
@@ -249,7 +254,7 @@ def do_coco_dataset(dataset_name, dataset_type, categories_list, categories_name
     for scene in scene_list:
         if not scene.endswith(".jpg"):
             continue
-        print("scene: " + scene)
+        logging.info("scene: " + scene)
         scene_path = os.path.join(scene_dir, scene)
         dia_path, warp_path = diagram_list[random.randint(0, len(diagram_list) - 1)]
         jpg_img, offset_x, offset_y, zoom = combine_scene_image(scene_path, warp_path)
@@ -281,8 +286,8 @@ def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_
     :return:
     """
     output_dir = "../output/" + dataset_name + "/" + dataset_type
-    print(output_dir)
-    print(categories_name_sub)
+    logging.info(output_dir)
+    logging.info(categories_name_sub)
     with open(os.path.join(output_dir, 'coco_data_all.json'), 'r', encoding="utf-8") as json_file:
         json_obj = json.loads(json_file.read())
     id_list = []
@@ -292,8 +297,10 @@ def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_
                 id_list.append(a["id"])
                 s["ori_id"] = a["id"]
 
+    json_obj["categories"] = categories_list_sub
     json_obj["annotations"] = [x for x in json_obj["annotations"]
                                if x["category_id"] in id_list]
+
     id_cnt = 0
     for x in json_obj["annotations"]:
         id_cnt += 1

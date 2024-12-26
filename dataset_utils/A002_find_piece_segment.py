@@ -1,5 +1,8 @@
-import json
+"""
+画棋子的轮廓，用于确认轮廓线条是否正确
+"""
 
+import json
 import cv2
 import numpy as np
 
@@ -31,7 +34,7 @@ from dataset_utils.A001_find_go_board_grid import save_middle_mat, reset_dir
 #     num_points = 8
 #     points = np.linspace(0, len(approx) - 1, num_points, dtype=int)
 #     sampled_points = approx[points]
-#     print(sampled_points)
+#     logging.info(sampled_points)
 #
 #     # 将16个点连接起来
 #     sampled_points = sampled_points.reshape((-1, 1, 2))
@@ -44,51 +47,24 @@ from dataset_utils.A001_find_go_board_grid import save_middle_mat, reset_dir
 #
 
 def find_piece_segment():
-    # 创建一张空白的60x60的图像（你可以替换为你的实际图像）
-    image = cv2.imread('../assets/material/W005.png')
+    find_segment('../assets/material/W005.png', 30,
+                 '../assets/material/segment_piece.json')
 
-    # 中心点
-    center = (30, 30)
-
-    # 画一个直径为60像素的圆
-    radius = 30
-    cv2.circle(image, center, radius, (0, 255, 0), 2)
-
-    # 取圆上均匀分布的16个点
-    num_points = 16
-    theta = np.linspace(0, 2 * np.pi, num_points, endpoint=False)
-    points_x = center[0] + radius * np.cos(theta)
-    points_y = center[1] + radius * np.sin(theta)
-    points = np.array(list(zip(points_x, points_y)), dtype=np.int32).reshape((-1, 1, 2))
-
-    # 在图像上画出这16个点（红色）
-    for point in points:
-        cv2.circle(image, tuple(point[0]), 2, (0, 0, 255), -1)
-
-
-    cv2.polylines(image, [points], isClosed=True, color=(255, 0, 0), thickness=2)
-
-    arr_reshaped = points.reshape((16,2))
-    arr_list = arr_reshaped.tolist()
-
-    # 将 Python 列表保存为 JSON 文件
-    with open('../assets/material/piece_segmentation.json', 'w') as json_file:
-        json.dump(arr_list, json_file)
-
-    # 显示图像
-    cv2.imshow('Circle with Points', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 def find_empty_segment():
+    find_segment('../assets/material/W005.png', 15,
+                 '../assets/material/segment_empty.json')
+
+
+def find_segment(piece_path, radius, output_json_path):
     # 创建一张空白的60x60的图像（你可以替换为你的实际图像）
-    image = cv2.imread('../assets/material/W005.png')
+    image = cv2.imread(piece_path)
 
     # 中心点
     center = (30, 30)
 
     # 画一个直径为60像素的圆
-    radius = 15
+    # radius = 15
     cv2.circle(image, center, radius, (0, 255, 0), 2)
 
     # 取圆上均匀分布的16个点
@@ -102,22 +78,19 @@ def find_empty_segment():
     for point in points:
         cv2.circle(image, tuple(point[0]), 2, (0, 0, 255), -1)
 
-
     cv2.polylines(image, [points], isClosed=True, color=(255, 0, 0), thickness=2)
 
-    arr_reshaped = points.reshape((16,2))
+    arr_reshaped = points.reshape((16, 2))
     arr_list = arr_reshaped.tolist()
 
     # 将 Python 列表保存为 JSON 文件
-    with open('../assets/material/empty_segmentation.json', 'w') as json_file:
+    with open(output_json_path, 'w') as json_file:
         json.dump(arr_list, json_file)
 
     # 显示图像
     cv2.imshow('Circle with Points', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-
 
 
 if __name__ == "__main__":

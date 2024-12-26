@@ -1,3 +1,7 @@
+"""
+合并棋盘与棋子，并输出label.txt
+"""
+
 import json
 import os
 import random
@@ -67,7 +71,7 @@ def combine_board_image(o_path, b_path, w_path, diagram_path=None, save_path=Non
     white_img = white_img.resize((board_info["avg_line_len"], board_info["avg_line_len"]))
 
     if diagram_path:
-        print("handling :" + diagram_path)
+        logging.info("handling :" + diagram_path)
         diagram = load_diagram(diagram_path)
         for r, row in enumerate(diagram):
             for c, cell in enumerate(row):
@@ -103,12 +107,16 @@ def extract_diagram():
 
     diagram_list = []
     for filename in os.listdir(zip_dir):
+        # todo: 小数据测试集
+        # if filename != "aa_my_label.zip":
+        #     continue
+
         src_path = os.path.join(zip_dir, filename)
         _, pre, _ = GetFileNameSplit(filename)
         dst_path = os.path.join(output_dir, pre)
         if not os.path.exists(dst_path):
             with zipfile.ZipFile(src_path, 'r') as zip_ref:
-                print(" unzip " + src_path + " to " + output_dir)
+                logging.info(" unzip " + src_path + " to " + output_dir)
                 # 解压 ZIP 文件到指定目标文件夹
                 # 目前是zip文件内有同名文件夹
                 zip_ref.extractall(output_dir)

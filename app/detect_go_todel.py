@@ -10,7 +10,7 @@ from Wlkr.Common.FileUtils import GetFileNameSplit
 from dataset_utils_rec.A000_warp_back import calc_anchor_point
 
 
-def board_warp_back(image_path, ship_save=None):
+def board_warp_back(image_path, skip_save=None):
     """
     todo: 角度少于阈值时，不warp_back
     todo: corner in board
@@ -18,7 +18,7 @@ def board_warp_back(image_path, ship_save=None):
     :return:
     """
 
-    print("warp_back " + image_path)
+    logging.info("warp_back " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model_bc(image_path)
 
@@ -69,7 +69,7 @@ def board_warp_back(image_path, ship_save=None):
 
         M = cv2.getPerspectiveTransform(np.float32(dst_pts), np.float32(src_pts))
         save_name = pre + "_wb" + ext
-        if not ship_save:
+        if not skip_save:
             new_image = img.copy()
             warped_image = cv2.warpPerspective(new_image, M, (wb_len + of_len * 2, wb_len + of_len * 2),
                                                borderMode=cv2.BORDER_CONSTANT,
@@ -78,12 +78,12 @@ def board_warp_back(image_path, ship_save=None):
         cv2.imwrite(os.path.join(output_dir, pre + "_wb" + ext), warped_image)
         return M, save_name
     else:
-        print("corners < 4")
+        logging.info("corners < 4")
         return None, None
 
 
-def board_split_row(image_path, threshole= 0.75,ship_save=None):
-    print("split row " + image_path)
+def board_split_row(image_path, threshole= 0.75,skip_save=None):
+    logging.info("split row " + image_path)
     bn, pre, ext = GetFileNameSplit(image_path)
     result = model_r(image_path)
     json_obj = result.pandas().xyxy[0].to_json(orient='records')
@@ -98,7 +98,7 @@ def board_split_row(image_path, threshole= 0.75,ship_save=None):
     rows = []
     for cls in json_obj:
         if cls["confidence"] < threshole:
-            print(f'{cls["confidence"]} < {threshole}')
+            logging.info(f'{cls["confidence"]} < {threshole}')
             continue
         min_x, max_x, min_y, max_y = int(cls["xmin"]), int(cls["xmax"]), \
                                      int(cls["ymin"]), int(cls["ymax"])
@@ -114,7 +114,7 @@ def row_rec(rows):
     res_list = []
     for cls, img_path in rows:
         res = ocr.ocr(img_path, det=False, cls=False)
-        # print(res)
+        # logging.info(res)
         res_list.append(res)
     return res_list
 

@@ -4,3 +4,5 @@ uploadfiles/
 output/
 assets/unclassified/
 runs/
+yolo_utils/results/
+yolo_utils/result*
