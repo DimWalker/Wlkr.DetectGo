@@ -44,7 +44,7 @@ def convert(size, box):
     return (x, y, w, h)
 
 
-def coco_to_yolo_fmt(ds_path, save_path, coco_json_name, coco_label_name):
+def coco_to_yolo_fmt(ds_path, save_path, coco_json_name, coco_label_name, rela_dir_name):
     print(ds_path)
     print(save_path)
     print(coco_json_name)
@@ -81,7 +81,7 @@ def coco_to_yolo_fmt(ds_path, save_path, coco_json_name, coco_label_name):
         f_txt.close()
         # 将图片的相对路径写入train2017或val2017的路径
         # todo: 待改进，相对路径在coco_data.json中
-        list_file.write(os.path.join(ds_path, '%s.jpg\n' % (head)))
+        list_file.write('./../%s/%s.jpg\n' % (rela_dir_name, head))
     list_file.close()
 
 

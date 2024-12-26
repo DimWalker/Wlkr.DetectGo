@@ -270,7 +270,7 @@ def do_coco_dataset(dataset_name, dataset_type, categories_list, categories_name
         sc_lb.writelines(scene_label)
 
 
-def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_sub, categories_name_sub):
+def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_sub: dict, categories_name_sub):
     """
     前置条件 coco_data_all.json
     :param dataset_name:
@@ -300,6 +300,11 @@ def all_to_sub(dataset_name, dataset_type, categories_list_all, categories_list_
         x["id"] = id_cnt
         x["category_id"] = [y["id"] for y in categories_list_sub
                             if y["ori_id"] == x["category_id"]][0]
+
+    for x in categories_list_sub:
+        if "ori_id" in x:
+            del x["ori_id"]
+    json_obj["categories"] = categories_list_sub
     with open(os.path.join(output_dir, f'coco_data_{categories_name_sub}.json'), 'w', encoding="utf-8") as json_file:
         json.dump(json_obj, json_file)
 
