@@ -2,7 +2,7 @@
 整合前面的所有步骤，合并为一个制作流程
 方便重开
 """
-
+import logging
 import os
 import shutil
 import sys
@@ -198,6 +198,15 @@ def coco_to_yolo(label_type):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        force=True
+    )
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
     # 基础棋谱
     remove_module_dir("../output/diagram_img")
     do_combine()

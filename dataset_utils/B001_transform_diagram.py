@@ -3,6 +3,7 @@
 """
 
 import json
+import logging
 import os
 import random
 import threading
@@ -14,7 +15,7 @@ from dataset_utils.B000_combine_board import load_diagram
 from dataset_utils.B002_combine_scene import draw_region
 
 # 增大正常矩形的比例，以应对游戏场景
-tmp_disable_factor = 2
+tmp_disable_factor = 100
 factor_cnt = 0
 lock_factor_cnt = threading.Lock()
 
@@ -305,6 +306,15 @@ def do_warp():
 
 cnt_limit = 10000000
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        force=True
+    )
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
     # 构建端正的行训练集
     # tmp_disable_factor = 1
     # try_to_warp()

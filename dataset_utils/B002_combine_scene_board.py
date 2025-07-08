@@ -5,6 +5,7 @@
 
 
 import json
+import logging
 import os.path
 import random
 import threading
@@ -28,43 +29,43 @@ info = {
 licenses_list = []
 
 
-# categories_list = [
-#     {
-#         "id": 1,
-#         "name": "board",
-#         "supercategory": "board"
-#     },
-#     {
-#         "id": 2,
-#         "name": "corner",
-#         "supercategory": "board"
-#     },
-#     {
-#         "id": 3,
-#         "name": "row",
-#         "supercategory": "board"
-#     },
-#     {
-#         "id": 4,
-#         "name": "col",
-#         "supercategory": "board"
-#     },
-#     {
-#         "id": 5,
-#         "name": "black",
-#         "supercategory": "piece"
-#     },
-#     {
-#         "id": 6,
-#         "name": "white",
-#         "supercategory": "piece"
-#     },
-#     {
-#         "id": 7,
-#         "name": "empty",
-#         "supercategory": "piece"
-#     },
-# ]
+categories_list = [
+    {
+        "id": 1,
+        "name": "board",
+        "supercategory": "board"
+    },
+    {
+        "id": 2,
+        "name": "corner",
+        "supercategory": "board"
+    },
+    {
+        "id": 3,
+        "name": "row",
+        "supercategory": "board"
+    },
+    {
+        "id": 4,
+        "name": "col",
+        "supercategory": "board"
+    },
+    {
+        "id": 5,
+        "name": "black",
+        "supercategory": "piece"
+    },
+    {
+        "id": 6,
+        "name": "white",
+        "supercategory": "piece"
+    },
+    {
+        "id": 7,
+        "name": "empty",
+        "supercategory": "piece"
+    },
+]
 
 
 def find_category_id(name, categories_list, raise_ex=True):
@@ -399,15 +400,24 @@ def pplabel_2_coco(pre_dir_name, categories_list):
 cnt_limit = 99999999
 # lock_obj = threading.Lock()
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        force=True
+    )
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
     # dataset_name = "diagram_det_rec_dataset"
-    # dataset_name = "go_board_dataset_all"
+    dataset_name = "go_board_dataset_all"
     # dataset_type = "eval"
 
-    # dataset_type = "eval"
-    # do_coco_dataset()
-    # dataset_type = "train"
-    # do_coco_dataset()
+    dataset_type = "eval"
+    do_coco_dataset(dataset_name,dataset_type,categories_list,"all")
+    dataset_type = "train"
+    do_coco_dataset(dataset_name,dataset_type,categories_list,"all")
     # try_to()
 
-    pplabel_2_coco("ppocrlabel_dataset_eval")
-    pplabel_2_coco("ppocrlabel_dataset")
+    #pplabel_2_coco("ppocrlabel_dataset_eval")
+    #pplabel_2_coco("ppocrlabel_dataset")

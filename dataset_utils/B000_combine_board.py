@@ -3,8 +3,10 @@
 """
 
 import json
+import logging
 import os
 import random
+import shutil
 import zipfile
 from datetime import datetime
 from io import StringIO
@@ -22,9 +24,30 @@ mtrl_dir = r"../assets/material"
 def load_diagram(diagram_path):
     with open(diagram_path, "r", encoding="utf-8") as f:
         content = f.read()
-    content = StringIO(content.replace("[", "").replace("]", ""))
+    content = StringIO(content.replace("[", "").replace("]", "").replace(".",""))
     diagram = np.genfromtxt(content, delimiter=' ', dtype=int, encoding="utf-8")
     return diagram
+
+
+# def load_diagram(diagram_path):
+#     with open(diagram_path, "r", encoding="utf-8") as f:
+#         content = f.read()
+#
+#     # 移除所有方括号
+#     content = content.replace("[", "").replace("]", "")
+#
+#     # 尝试先以整数格式读取
+#     try:
+#         content_io = StringIO(content)
+#         diagram = np.genfromtxt(content_io, delimiter=' ', dtype=int, encoding="utf-8")
+#     except ValueError:
+#         # 如果整数读取失败，尝试以浮点数格式读取
+#         content_io = StringIO(content)
+#         diagram = np.genfromtxt(content_io, delimiter=' ', dtype=float, encoding="utf-8")
+#         # 将浮点数转换为整数（假设小数部分总是.0）
+#         diagram = diagram.astype(int)
+#
+#     return diagram
 
 
 def init_material_list():
@@ -176,6 +199,8 @@ def do_combine():
     o, b, w = init_material_list()
     diagram_list = extract_diagram()
     output_dir = "../output/diagram_img"
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     label = []
@@ -200,8 +225,16 @@ def do_combine():
         l.writelines(label)
 
 
-cnt_limit = 50000
+cnt_limit = 500000
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        force=True
+    )
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     # try_to_combine()
     do_combine()
     # draw_board_region()
