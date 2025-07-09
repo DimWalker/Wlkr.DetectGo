@@ -259,3 +259,4 @@ if __name__ == "__main__":
     # coco转yolo格式
     coco_to_yolo("all")  # 所有
     coco_to_yolo("o_c")  # 棋盘、四个角
+    coco_to_yolo("b_w_n")  # 黑白空
